@@ -1,0 +1,49 @@
+============================================================
+FOLLOW-UP — Análises adicionais solicitadas por Jonathan
+============================================================
+
+1) DISTRIBUIÇÃO DE ACCOUNT_CATEGORY (PGS)
+----------------------------------------
+  real_user                701,680  (65.53%)
+  play_user                281,735  (26.31%)
+  suspended                 37,467  (3.50%)
+  closed                    37,338  (3.49%)
+  rg_closed                  9,143  (0.85%)
+  rg_cool_off                1,803  (0.17%)
+  fraud                      1,615  (0.15%)
+
+2) DOUBLE CHECK — PGS x TAP
+----------------------------------------
+  Total de jogadores PGS:                   1,070,781
+  Total de jogadores PGS (ext_id únicos):   1,070,781
+  Total de jogadores TAP:                   3,762,529
+  Total de jogadores TAP (únicos):          3,762,529
+  PGS encontrados na TAP:                   1,068,556
+  PGS NÃO encontrados na TAP:                   2,225
+
+NOTA: A TAP possui mais registros que a PGS porque inclui
+jogadores que existem na Smartico mas não na base PGS.
+Os 2.225 que não estão na TAP são contas PGS sem registro
+correspondente na Smartico TAP.
+
+3) CRUZAMENTO: ACCOUNT_CATEGORY x PRESENÇA NA TAP
+----------------------------------------
+  (ver pgs_account_category_vs_tap_pivot.csv para detalhes)
+
+na_tap             Não     Sim   Total
+account_category                      
+real_user         1334  700346  701680
+play_user          655  281080  281735
+suspended           66   37401   37467
+closed             140   37198   37338
+rg_closed           20    9123    9143
+rg_cool_off          8    1795    1803
+fraud                2    1613    1615
+
+============================================================
+Arquivos gerados:
+  - pgs_account_category_counts.csv
+  - pgs_account_category_vs_tap.csv
+  - pgs_account_category_vs_tap_pivot.csv
+  - followup_summary.txt (este arquivo)
+============================================================
