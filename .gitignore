@@ -2,6 +2,7 @@
 .env
 *credentials*.json
 *service_account*.json
+dwh-ext-24105.json
 
 # Python
 __pycache__/
