@@ -1,0 +1,31 @@
+{
+  "projeto": "Anti-Abuse Bot — Campanha Multiverso",
+  "descricao": "Bot que monitora os 6 Fortune games (PG Soft) a cada 5 minutos e alerta no Slack quando detecta jogadores suspeitos.",
+  "como_rodar": {
+    "iniciar": "./run_anti_abuse.sh",
+    "parar": "./run_anti_abuse.sh stop",
+    "status": "./run_anti_abuse.sh status",
+    "ver_logs": "tail -f logs/anti_abuse_YYYY-MM-DD.log"
+  },
+  "sobre_o_csv": {
+    "obrigatorio": false,
+    "descricao": "O bot funciona sem CSV. Se rodar com --csv, salva um arquivo em logs/ com todos os jogadores analisados naquele ciclo (score, flags, total apostado, etc.). Útil se quiser histórico local na EC2 para consultar depois. Para subir o bot, ignora essa parte — não precisa usar.",
+    "como_ativar": "python pipelines/anti_abuse_multiverso.py --loop --csv"
+  },
+  "alertas_slack": {
+    "canal": "#risco-multiverso",
+    "quando_dispara": "Quando há pelo menos 1 jogador com risco ALTO",
+    "frequencia": "A cada 5 minutos"
+  },
+  "flags_monitoradas": {
+    "CONTA_POS_PROMO": "Conta criada após o início da promo (+45 pts)",
+    "BOT_SPEED_Xs": "Menos de 1s entre apostas — automação (+30 pts)",
+    "BONUS_REPETIDO_xN": "Mesma quest entregue mais de 1x — fraude direta (+55 pts)",
+    "BONUS_EXCESSO_N": "Recebeu mais de 18 bônus da campanha (+55 pts)"
+  },
+  "niveis_de_risco": {
+    "BAIXO": "score < 35",
+    "MEDIO": "score >= 35",
+    "ALTO": "score >= 55"
+  }
+}
