@@ -25,3 +25,50 @@ memory/
 # IDE
 .vscode/
 *.code-workspace
+
+# Build artifacts
+build/
+dist/
+*.zip
+*.mp4
+
+# Claude / Agentes (config local)
+.agents/
+.claude/
+.claude-flow/
+.mcp.json
+skills-lock.json
+
+# Arquivos acidentais (fragmentos de comandos)
+0
+0,
+0,-
+1
+12}]
+15s}
+50
+70%
+7}
+9}
+Enquanto
+JOURNEY
+SLACK_MIN_HIGH_RISK
+pd.DataFrame
+smr_game_id
+top_n
+temp_query_relampago.py
+TIMESTAMP('2026-03-12
+TIMESTAMP_SUB(CURRENT_TIMESTAMP()
+
+# Outputs de pipelines e análises
+analysis/output/
+reports/perfil_jogadores_*.csv
+reports/anti_abuse_*.csv
+reports/relatorio_bonus_*.csv
+validacoes/*.csv
+validacoes/*.zip
+segmentacao_output_*/
+"Mapeamento Matriz de Risco/Arquivos CSV*"
+"Mapeamento Matriz de Risco/_WITH_*.csv"
+"Solicitações Pontuais/**/*.csv"
+"Solicitações Pontuais/**/*.xlsx"

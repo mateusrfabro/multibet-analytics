@@ -1,0 +1,89 @@
+==================================================
+SEGMENTACAO DE PROMOCOES — MultiBet
+==================================================
+
+O QUE FAZ:
+- Cole o texto da demanda de segmentacao (mark user, jogo, faixas)
+- O sistema consulta BigQuery e Redshift automaticamente
+- Gera CSV, ZIP e mensagens prontas para WhatsApp
+- Valida cruzando dados entre as duas fontes
+
+--------------------------------------------------
+SETUP (apenas na primeira vez)
+--------------------------------------------------
+
+1. Instalar Python 3.12+
+   https://www.python.org/downloads/
+   (marcar "Add to PATH" na instalacao)
+
+2. Abrir o terminal na pasta do projeto MultiBet e rodar:
+   pip install -r segmentacao_app/requirements.txt
+
+3. Garantir que existem na raiz do projeto:
+   - .env (com credenciais do Redshift)
+   - bigquery_credentials.json (chave do BigQuery)
+
+   Pedir esses arquivos para o Mateus Fabro ou Gusta.
+
+--------------------------------------------------
+COMO ABRIR
+--------------------------------------------------
+
+Opcao 1: Duplo-clique em segmentacao_app/run.bat
+Opcao 2: No terminal: python -m segmentacao_app
+
+--------------------------------------------------
+COMO USAR
+--------------------------------------------------
+
+1. Cole o texto da demanda no campo "Texto da Demanda"
+   (mesmo texto que o James/Castrin envia no WhatsApp)
+
+2. Verifique os "Parametros Identificados" —
+   confira se jogo, periodo e faixas estao corretos
+
+3. Clique em "Processar" e aguarde (~30 segundos)
+
+4. Use os botoes:
+   - Baixar ZIP: salva o arquivo para enviar
+   - Baixar CSV: salva so a planilha
+   - Copiar Resumo: cola a msg 1 no WhatsApp
+   - Copiar Validacoes: cola a msg 2 no WhatsApp
+   - Abrir Pasta: abre a pasta com os arquivos
+
+--------------------------------------------------
+FORMATO DO TEXTO DE ENTRADA
+--------------------------------------------------
+
+O texto deve seguir este padrao (copiar do WhatsApp):
+
+  Usuarios com opt-in marcados com mark user: TAG_AQUI
+  Realizar apostas no jogo NOME_DO_JOGO no periodo
+  das 11h do dia DD/MM/AAAA as 23h59 do dia DD/MM/AAAA
+  no UTC-03:00.
+  Nao e permitido rollback.
+  Faixa 1: Apostas entre R$X a R$Y
+  Faixa 2: Apostas entre R$X a R$Y
+  Faixa 3: Apostas entre R$X a R$Y
+  Faixa 4: Apostas de R$X ou mais
+
+--------------------------------------------------
+PROBLEMAS COMUNS
+--------------------------------------------------
+
+Erro de conexao (communication error):
+- Verificar se esta conectado na rede/VPN
+- Verificar se a senha do Redshift no .env nao expirou
+
+Jogo nao encontrado:
+- Verificar se o nome do jogo esta correto no texto
+- O sistema busca no catalogo automaticamente
+
+Logs:
+- Os logs ficam em segmentacao_app/logs/
+- Arquivo diario: segmentacao_YYYYMMDD.log
+
+--------------------------------------------------
+CONTATO
+--------------------------------------------------
+Mateus Fabro — Squad Intelligence Engine
