@@ -2,7 +2,7 @@
 Conexão com AWS Athena (Iceberg Data Lake) — somente leitura.
 
 Usa as mesmas 15 databases do Redshift, mas via Athena sobre Iceberg.
-Região: sa-east-1 | Conta: 803633136520
+Região: sa-east-1
 
 Uso:
     from db.athena import query_athena
@@ -33,8 +33,7 @@ def get_connection(database: str = "default"):
     return connect(
         aws_access_key_id=os.getenv("ATHENA_AWS_ACCESS_KEY_ID"),
         aws_secret_access_key=os.getenv("ATHENA_AWS_SECRET_ACCESS_KEY"),
-        s3_staging_dir=os.getenv("ATHENA_S3_STAGING",
-                                 "s3://aws-athena-query-results-803633136520-sa-east-1/"),
+        s3_staging_dir=os.getenv("ATHENA_S3_STAGING"),
         region_name=os.getenv("ATHENA_REGION", "sa-east-1"),
         schema_name=database,
     )

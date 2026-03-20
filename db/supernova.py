@@ -13,12 +13,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BASTION_HOST = "34.238.84.114"
+BASTION_HOST = os.getenv("BASTION_HOST", "CONFIGURE_NO_ENV")
 BASTION_PORT = 22
-BASTION_USER = "ec2-user"
+BASTION_USER = os.getenv("BASTION_USER", "ec2-user")
 BASTION_KEY  = os.getenv("SUPERNOVA_PEM_PATH", "bastion-analytics-key.pem")
 
-PG_HOST = "supernova-db.c8r8mcwe6zq9.us-east-1.rds.amazonaws.com"
+PG_HOST = os.getenv("SUPERNOVA_HOST", "CONFIGURE_NO_ENV")
 PG_PORT = 5432
 PG_DB   = os.getenv("SUPERNOVA_DB",   "supernova_db")
 PG_USER = os.getenv("SUPERNOVA_USER", "analytics_user")
