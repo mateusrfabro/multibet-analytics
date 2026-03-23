@@ -395,10 +395,10 @@ def get_dashboard_data(channel=None) -> dict:
     for key in metrics_keys:
         variations_d1[key] = _calc_variation(d1[key], d2[key])
 
-    # Comparativo semanal: D-1 (fechado) vs D-8 (mesmo dia semana passada)
+    # Comparativo semanal: D-1 (fechado) vs D-7 (7 dias atras)
     variations_d7 = {}
     for key in metrics_keys:
-        variations_d7[key] = _calc_variation(d1[key], d8[key])
+        variations_d7[key] = _calc_variation(d1[key], d7[key])
 
     # Gerar insights com base em D-1 vs D-2 (dias fechados)
     insights = _generate_insights(d1, d2, d8, by_affiliate)

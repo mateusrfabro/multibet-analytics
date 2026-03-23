@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- CSS do tema (o designer mexe AQUI) -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v=3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}?v=5">
 
     <!-- Chart.js (graficos) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -37,9 +37,9 @@
 
             <!-- Filtro de periodo -->
             <div class="period-filter">
-                <button class="period-btn active" data-compare="d1">vs Ontem</button>
+                <button class="period-btn" data-compare="d1">vs Ontem</button>
                 <button class="period-btn" data-compare="d7">vs 7 dias</button>
-                <button class="period-btn" data-compare="hourly">Hoje (live)</button>
+                <button class="period-btn active" data-compare="hourly">Hoje (live)</button>
             </div>
 
             <button class="btn btn-refresh" id="btn-refresh" title="Forcar atualizacao">Atualizar</button>
@@ -211,7 +211,7 @@
     </footer>
 
     <!-- JavaScript (logica + graficos) -->
-    <script src="{{ url_for('static', filename='js/dashboard.js') }}?v=3"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}?v=5"></script>
 
 </body>
 </html>

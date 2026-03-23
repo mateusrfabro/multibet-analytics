@@ -20,7 +20,7 @@
 // ESTADO GLOBAL
 // =========================================================================
 let dashboardData = null;
-let currentCompare = 'd1'; // 'd1' (D-1 vs D-2), 'd7' (D-1 vs D-7), 'hourly' (live)
+let currentCompare = 'hourly'; // 'hourly' (live, default), 'd1' (D-1 vs D-2), 'd7' (D-1 vs D-7)
 let currentChannel = 'google'; // 'google', 'meta', 'all'
 
 // Cores dos graficos (lidas do CSS para manter consistencia)
