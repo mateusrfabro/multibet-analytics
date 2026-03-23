@@ -95,9 +95,25 @@ Sempre incluir antes do filtro de timestamp — evita Full Scan no S3 (custo AWS
 - Preferir as camadas pré-agregadas (`ps_bi`) quando disponíveis, em vez dos `_ec2` brutos
 - Usar `LIMIT` durante desenvolvimento/testes para não escanear tabelas inteiras
 
+## Padrão de entrega (OBRIGATÓRIO)
+Toda entrega de dados (CSV, Excel, report) DEVE incluir uma **legenda/dicionário**:
+- **O que cada coluna significa** — nome, tipo, unidade (BRL, %, dias, etc.)
+- **Glossário de termos** — ex: GGR = receita da casa (apostas - ganhos do jogador)
+- **Como interpretar scores/tiers** — formula, pesos, faixas de corte
+- **Ação sugerida** — o que o stakeholder deve fazer com cada segmento/tier
+- **Fonte dos dados** — qual banco/tabela/período foi usado
+
+Formatos aceitos:
+- **Excel:** aba "Legenda" separada dos dados
+- **CSV:** arquivo `_legenda.txt` acompanhando o CSV
+- **HTML report:** seção "Como ler este relatório" no topo
+
+Nenhuma entrega deve gerar dúvida. Se alguém precisa perguntar "o que é isso?",
+a entrega falhou.
+
 ## Meu objetivo com cada entrega
-Quero ser reconhecido pelo time, mostrar capacidade de gestão e crescer 
-na empresa. Cada entrega deve ser sólida, bem documentada e com raciocínio 
+Quero ser reconhecido pelo time, mostrar capacidade de gestão e crescer
+na empresa. Cada entrega deve ser sólida, bem documentada e com raciocínio
 claro — como um analista sênior entregaria.
 
 ## Super Nova Bet (Paquistão)

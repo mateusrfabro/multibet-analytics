@@ -49,6 +49,7 @@ dist/
 # Claude / Agentes (config local)
 .agents/
 .claude/
+!.claude/agents/
 .claude-flow/
 .mcp.json
 skills-lock.json
