@@ -1,0 +1,160 @@
+======================================================================
+  REPORT: Analise Promo Deposite e Ganhe - 25/03/2026
+  Fonte: fund_ec2 (real-time) + matriz_risco (Super Nova DB)
+  Gerado: 25/03/2026 15:12 BRT
+  Auditor: validacao cruzada fund_ec2 vs ps_bi realizada
+======================================================================
+
+1. DEPOSITOS POS 11H BRT
+----------------------------------------
+   Total transacoes ....    6,401
+   Players unicos ......    5,684
+   Valor total ......... R$   2,863,060.10
+   FTDs no periodo .....    3,068  (54.0% dos depositantes)
+   FTDs total do dia ...    3,387
+
+   Por hora BRT:
+     11h:   351 players | R$    69,299.57 |  104 FTDs
+     12h: 3,368 players | R$ 1,865,900.34 | 2,596 FTDs
+     13h: 1,285 players | R$   566,564.84 |  408 FTDs
+     14h:   789 players | R$   301,136.74 |   14 FTDs
+     15h:   178 players | R$    60,158.61 |    2 FTDs
+
+   Faixas de deposito:
+     <R$50                 : 1,500 txns | R$    39,645.62 |  23.4%
+     R$50-100              :   369 txns | R$    33,866.72 |   5.8%
+     R$100-200             :   402 txns | R$    64,232.94 |   6.3%
+     R$200-500             :   647 txns | R$   215,159.65 |  10.1%
+     R$500-700 (PROMO)     : 2,934 txns | R$ 2,051,959.00 |  45.8%
+     R$700-1K              :   530 txns | R$   402,029.53 |   8.3%
+     R$1K+                 :    19 txns | R$    56,166.64 |   0.3%
+
+   Top Affiliates:
+     aff    53194: 1,795 players | R$ 1,093,850.60 | 1,205 FTDs
+     aff        0:   645 players | R$   360,259.51 |  370 FTDs
+     aff   297657:   499 players | R$   195,930.15 |  208 FTDs
+     aff   414493:   305 players | R$   176,782.60 |  198 FTDs
+     aff   397150:   257 players | R$   153,600.11 |  163 FTDs
+     aff   445431:   215 players | R$   111,316.72 |  122 FTDs
+     aff   458609:   179 players | R$    92,531.00 |  112 FTDs
+     aff   354691:    57 players | R$    36,530.81 |   39 FTDs
+
+
+2. MATRIZ DE RISCO DOS DEPOSITANTES
+----------------------------------------
+   Cruzados com matriz: 5,521 de 5,684 (97%)
+
+   Muito Bom      :  1,182 ( 21.4%)
+   Bom            :  1,366 ( 24.7%)
+   Mediano        :  1,108 ( 20.1%)
+   Ruim           :    730 ( 13.2%) <<< ALERTA
+   Muito Ruim     :  1,135 ( 20.6%) <<< ALERTA
+   RISCO ALTO     :  1,865 ( 33.8%) <<<
+
+
+3. TOP GANHADORES CASINO (GGR < -R$1.000)
+----------------------------------------
+   Total: 20 players | GGR acumulado: R$ -370,335.52
+   Top 5 concentram: R$ -331,946.65 (90%)
+
+    1. celiafisica404@gmail.com  | Reg: 2026-03-24 | Aff:   297657
+       Bet: R$ 1,380,850.00 | Win: R$ 1,657,528.00 | GGR: R$  -276,678.00
+       Bets:  4,280 | Saque: R$  30,000.00 | Risco: Bom(80)
+
+    2. fabio.pdl40@gmail.com     | Reg: 2026-03-23 | Aff:        0
+       Bet: R$   280,739.00 | Win: R$   302,043.90 | GGR: R$   -21,304.90
+       Bets:    535 | Saque: R$  65,000.00 | Risco: Bom(80)
+
+    3. marciobrandao2@hotmail.co | Reg: 2026-03-24 | Aff:   297657
+       Bet: R$   278,280.50 | Win: R$   296,173.15 | GGR: R$   -17,892.65
+       Bets:  2,319 | Saque: R$  15,000.00 | Risco: Muito Bom(82)
+
+    4. Jefferson0711925          | Reg: 2025-09-06 | Aff:   445431
+       Bet: R$     2,706.60 | Win: R$    13,777.50 | GGR: R$   -11,070.90
+       Bets:    280 | Saque: R$   2,000.00 | Risco: Muito Bom(82)
+
+    5. Neisa0066981              | Reg: 2025-01-30 | Aff:   341049
+       Bet: R$     1,281.00 | Win: R$     6,281.20 | GGR: R$    -5,000.20
+       Bets:     83 | Saque: R$   8,000.00 | Risco: Bom(60)
+
+    6. pacoradini@hotmail.com    | Reg: 2026-03-15 | Aff:   297657
+       Bet: R$    10,480.00 | Win: R$    14,807.70 | GGR: R$    -4,327.70
+       Bets:     65 | Saque: R$   4,500.00 | Risco: Muito Bom(100)
+
+    7. inputs05@gmail.com        | Reg: 2026-03-25 | Aff:   297657
+       Bet: R$     6,575.00 | Win: R$    10,475.00 | GGR: R$    -3,900.00
+       Bets:     13 | Saque: R$   4,900.00 | Risco: Sem score
+
+    8. josielmartins2@hotmail.co | Reg: 2026-03-22 | Aff:   528841
+       Bet: R$    13,546.00 | Win: R$    17,117.27 | GGR: R$    -3,571.27
+       Bets:  2,968 | Saque: R$   3,672.41 | Risco: Mediano(50)
+
+    9. antoniopn045@gmail.com    | Reg: 2026-03-25 | Aff:        0
+       Bet: R$    35,836.10 | Win: R$    39,092.90 | GGR: R$    -3,256.80
+       Bets:    660 | Saque: R$   5,000.00 | Risco: Muito Ruim(0)
+
+   10. Alex0189342               | Reg: 2025-02-18 | Aff:    53194
+       Bet: R$    26,491.00 | Win: R$    29,316.90 | GGR: R$    -2,825.90
+       Bets:  1,099 | Saque: R$   7,025.93 | Risco: Bom(80)
+
+   11. andykito2017@gmail.com    | Reg: 2026-03-24 | Aff:   297657
+       Bet: R$    12,003.60 | Win: R$    14,604.90 | GGR: R$    -2,601.30
+       Bets:  1,615 | Saque: R$   5,300.00 | Risco: Muito Bom(100)
+
+   12. Juniorebfsa@hotmail.com   | Reg: 2026-03-22 | Aff:   297657
+       Bet: R$   208,475.50 | Win: R$   211,066.28 | GGR: R$    -2,590.78
+       Bets:    473 | Saque: R$       0.00 | Risco: Muito Bom(92)
+
+   13. Carlos0328154             | Reg: 2025-05-27 | Aff:   458609
+       Bet: R$     1,652.00 | Win: R$     3,853.58 | GGR: R$    -2,201.58
+       Bets:    503 | Saque: R$   4,243.68 | Risco: Bom(80)
+
+   14. guilhermeyalla@gmail.com  | Reg: 2026-03-16 | Aff:   297657
+       Bet: R$     2,450.00 | Win: R$     4,580.00 | GGR: R$    -2,130.00
+       Bets:     10 | Saque: R$   3,300.00 | Risco: Muito Bom(100)
+
+   15. jpgp2316@gmail.com        | Reg: 2026-03-19 | Aff:   297657
+       Bet: R$     8,471.00 | Win: R$    10,449.85 | GGR: R$    -1,978.85
+       Bets:     69 | Saque: R$   4,175.00 | Risco: Muito Bom(100)
+
+
+4. ALERTAS E RECOMENDACOES
+----------------------------------------
+
+   [CRITICO] celiafisica404@gmail.com (affiliate 297657)
+   Conta criada 24/03 (1 dia). Deposito total R$ 5K.
+   Bet R$ 1.38M / Win R$ 1.66M = GGR -R$ 276K em Fortune Rabbit (PG Soft).
+   4.280 rodadas em 1 jogo. Ja sacou R$ 30K.
+   Matriz de risco: Bom(80) - GAP no modelo (nao captura turnover anomalo).
+   -> ACAO: bloquear saques pendentes, escalar para Risk/Fraude.
+
+   [ALTO] 34.5% dos depositantes pos-11h sao Ruim/Muito Ruim
+   1,865 jogadores de alto risco depositando na promo.
+   -> ACAO: monitorar saques deste grupo, revalidar turnover 3x.
+
+   [MEDIO] Padrao de bonus abuse na promo
+   48% dos depositos na faixa R$500-700 (faixa da promo).
+   Padrao: deposita > recebe bonus > bet minimo (1-2 bets) > saca tudo.
+   -> ACAO: CRM verificar se turnover 3x esta sendo enforced antes do saque.
+   -> ACAO: Identificar multi-accounts (mesmo IP/device) entre os FTDs.
+
+   [INFO] Pipeline ps_bi atrasado ~3-4h
+   Numeros via ps_bi estao ~20% abaixo do real para dados intraday.
+   Para analises do dia corrente, usar fund_ec2 diretamente.
+
+5. GLOSSARIO
+----------------------------------------
+   GGR = Gross Gaming Revenue (Bet - Win). Negativo = casa perdeu
+   FTD = First Time Deposit (primeiro deposito do jogador)
+   NRC = New Registered Customer (novo registro)
+   Turnover = volume total apostado / valor depositado
+   Matriz de Risco = score 0-100 calculado no Super Nova DB
+     Muito Bom (82-100) | Bom (52-80) | Mediano (22-50) | Ruim (2-20) | Muito Ruim (0)
+
+   Fonte primaria: fund_ec2.tbl_real_fund_txn (real-time)
+   Fonte secundaria: ps_bi.dim_user (cadastro/FTD)
+   Risco: multibet.matriz_risco (Super Nova DB)
+   Periodo: 25/03/2026, depositos a partir das 11h BRT
+   Excluidos: test users (is_test = true)
+   Validacao: cruzamento fund_ec2 vs ps_bi realizado, divergencia documentada
+======================================================================

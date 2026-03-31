@@ -1,0 +1,34 @@
+LEGENDA — Listas FTD Março/2026 para Tráfego
+============================================================
+Gerado em: 2026-03-27
+Período FTD: 2026-03-01 a 2026-03-26 (março/2026, até D-1)
+Fonte: bireports_ec2.tbl_ecr (base REGs) + ps_bi.dim_user (FTD + dados pessoais)
+Validação cruzada: BigQuery Smartico CRM (j_user)
+Filtros: is_test = false | FTD em março BRT | affiliate_id por canal
+Demanda: Head de Tráfego
+
+ARQUIVOS
+--------
+lista_ftd_marco_google_FINAL.csv — Affiliate 464673 (Google)
+lista_ftd_marco_meta_FINAL.csv   — Affiliate 297657 (Meta)
+
+DICIONÁRIO DE COLUNAS
+---------------------
+user            — ID interno do jogador (ecr_id, 18 dígitos)
+external_user   — ID externo do jogador (= user_ext_id no Smartico CRM)
+nome            — Nome completo (first_name + last_name)
+email           — E-mail cadastrado pelo jogador
+telefone        — Telefone celular cadastrado (mobile_number)
+
+DEFINIÇÕES
+----------
+FTD = First Time Deposit = primeiro depósito confirmado do jogador
+Affiliate = canal de aquisição de tráfego
+  464673 = Google (campanhas Google Ads)
+  297657 = Meta (campanhas Facebook/Instagram Ads)
+
+COMO USAR
+---------
+Estas listas contêm jogadores que se registraram via cada canal de tráfego
+e fizeram seu primeiro depósito durante março/2026 (até 2026-03-26).
+Usar para audiências de remarketing/lookalike no Google Ads e Meta Ads.

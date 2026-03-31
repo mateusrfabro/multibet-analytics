@@ -1,0 +1,38 @@
+LEGENDA — jogadores_turnover_5k_90d_FINAL.csv
+============================================================
+Gerado em: 2026-03-25
+Período: 2025-12-25 a 2026-03-24 (90 dias, até D-1)
+Fonte: ps_bi.fct_player_activity_daily + ps_bi.dim_user (Athena)
+Filtro: turnover_total >= R$ 5.000 | is_test = false
+
+DICIONÁRIO DE COLUNAS
+---------------------
+player_id              — ID interno do jogador (ecr_id, 18 dígitos)
+external_id            — ID externo (usado no Smartico CRM como user_ext_id)
+turnover_total_brl     — Total apostado no período (casino + sportsbook, real + bônus), em R$
+turnover_real_brl      — Apostas com dinheiro real (sem bônus), em R$
+turnover_bonus_brl     — Apostas com saldo de bônus, em R$
+turnover_casino_brl    — Apostas em casino (slots + live), em R$
+turnover_sportsbook_brl — Apostas em sportsbook, em R$
+ggr_brl                — Gross Gaming Revenue = apostas - ganhos do jogador, em R$
+ngr_brl                — Net Gaming Revenue = GGR - custos de bônus, em R$
+dias_ativos            — Quantidade de dias distintos com atividade no período
+total_logins           — Total de logins no período
+primeira_atividade     — Data da primeira atividade registrada no período
+ultima_atividade       — Data da última atividade registrada no período
+
+GLOSSÁRIO
+---------
+Turnover    = volume total apostado (bet amount)
+GGR         = receita bruta da casa (apostas - ganhos do jogador)
+NGR         = receita líquida (GGR - custos de bônus e promoções)
+D-1         = dia anterior completo (evita dados parciais do dia corrente)
+Real money  = apostas com depósito real do jogador
+Bônus       = apostas feitas com saldo promocional
+
+NOTAS
+-----
+- Valores em BRL (reais), já convertidos (ps_bi não usa centavos)
+- Test users excluídos (is_test = false no dim_user)
+- Timestamps da tabela ps_bi são UTC; activity_date é truncamento por dia
+- Ordenado por turnover_total decrescente

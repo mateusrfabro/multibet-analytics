@@ -1,0 +1,27 @@
+LEGENDA — base1_turnover_5k_90d_FINAL.csv
+============================================================
+Gerado em: 2026-03-25
+Período: 2025-12-25 a 2026-03-24 (90 dias, até D-1)
+Fonte: ps_bi.fct_player_activity_daily + ps_bi.dim_user (Athena)
+Filtro: turnover_total >= R$ 5.000 | is_test = false
+Demanda: Head de Tráfego
+
+DICIONÁRIO DE COLUNAS
+---------------------
+player_id              — ID interno (ecr_id, 18 dígitos)
+external_id            — ID externo (= user_ext_id no Smartico)
+email                  — E-mail cadastrado pelo jogador
+mobile_number          — Telefone celular cadastrado
+turnover_total_brl     — Total apostado (casino + sportsbook, real + bônus), R$
+turnover_real_brl      — Apostas com dinheiro real, R$
+turnover_bonus_brl     — Apostas com saldo de bônus, R$
+turnover_casino_brl    — Apostas em casino (slots + live), R$
+turnover_sportsbook_brl — Apostas em sportsbook, R$
+ggr_brl                — Gross Gaming Revenue (apostas - ganhos jogador), R$
+ngr_brl                — Net Gaming Revenue (GGR - custos bônus), R$
+dias_ativos            — Dias distintos com atividade no período
+total_logins           — Logins no período
+primeira_atividade     — Data da 1ª atividade no período
+ultima_atividade       — Data da última atividade no período
+
+GLOSSÁRIO: GGR = receita bruta | NGR = receita líquida | Turnover = volume apostado

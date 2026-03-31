@@ -1,0 +1,28 @@
+LEGENDA — base2_reg_sem_ftd_15d_FINAL.csv
+============================================================
+Gerado em: 2026-03-25
+Período de registro: 2026-03-10 a 2026-03-24 (15 dias, até D-1)
+Fonte: ps_bi.dim_user (Athena)
+Filtro: registration_date no período + ftd_date IS NULL | is_test = false
+Demanda: Head de Tráfego
+
+DICIONÁRIO DE COLUNAS
+---------------------
+player_id              — ID interno (ecr_id, 18 dígitos)
+external_id            — ID externo (= user_ext_id no Smartico)
+email                  — E-mail cadastrado
+mobile_number          — Telefone celular cadastrado
+registration_date      — Data de registro (UTC truncado)
+signup_datetime_brt    — Data/hora exata de registro (BRT, America/Sao_Paulo)
+registration_status    — Status do cadastro
+has_ftd                — Se fez primeiro depósito (0 = NÃO fez FTD, filtro: ftd_date IS NULL)
+affiliate_id           — ID do afiliado (tráfego)
+tracker_id             — ID do tracker
+signup_channel         — Canal de cadastro
+signup_device          — Dispositivo usado no cadastro
+utm_source             — UTM source (origem do tráfego)
+utm_medium             — UTM medium (tipo de mídia)
+utm_campaign           — UTM campaign (campanha)
+
+NOTA: Jogadores que se registraram no período mas AINDA NÃO fizeram
+o primeiro depósito (FTD). Útil para ações de conversão/remarketing.

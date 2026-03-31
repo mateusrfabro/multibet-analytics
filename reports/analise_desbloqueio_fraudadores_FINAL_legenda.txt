@@ -1,0 +1,90 @@
+======================================================================
+LEGENDA - Analise de Desbloqueio de Fraudadores de Missoes
+Data: 30/03/2026
+======================================================================
+
+DICIONARIO DE COLUNAS
+----------------------------------------
+  user_id: ID externo do usuario (external_id)
+  ecr_id: ID interno transacional (18 digitos)
+  decisao: Recomendacao: DESBLOQUEAR / AVALIAR / MANTER BLOQUEADO
+  score_desbloqueio: Score composto (-100 a +100) baseado em multiplos criterios
+  justificativa: Razoes detalhadas para a decisao
+  classificacao_risco: Classificacao na matriz de risco de 20/03 (Muito Ruim a Muito Bom)
+  score_risco_bruto: Score bruto da matriz de risco (negativo = pior)
+  score_risco_norm: Score normalizado da matriz de risco (0-100)
+  dias_desde_cadastro: Dias desde o cadastro ate hoje (30/03/2026)
+  teve_ftd: Se o usuario ja fez primeiro deposito (True/False)
+  dias_desde_ftd: Dias desde o primeiro deposito
+  dias_ativos: Quantidade de dias distintos com atividade
+  total_logins: Total de logins registrados
+  dias_desde_ultimo_login: Dias desde o ultimo login
+  total_depositos: Soma total de depositos em BRL
+  qtd_depositos: Quantidade de depositos realizados
+  total_saques: Soma total de saques em BRL
+  net_deposit: Depositos - Saques (positivo = casa tem saldo)
+  ggr_total: GGR total (casino + sports, realcash) em BRL. Positivo = casa ganha
+  ngr_total: NGR total (GGR - bonus - custos) em BRL. Principal indicador de rentabilidade
+  casino_realbet_total: Total apostas casino realcash em BRL
+  casino_real_win_total: Total ganhos casino realcash em BRL
+  sports_realbet_total: Total apostas sports realcash em BRL
+  sports_real_win_total: Total ganhos sports realcash em BRL
+  games_fraud: Quantidade de jogos diferentes em que cometeu fraude
+  total_buyin: Volume total de buy-in nas apostas fraudulentas (BRL)
+  total_rollback: Volume total de rollbacks fraudulentos (BRL)
+  total_turnover_real: Turnover real (nao-rollback) nas apostas flagged (BRL)
+  avg_rb_pct: Percentual medio de rollback (100% = fraude pura)
+  fraud_records: Numero de registros de fraude (jogo x periodo)
+  first_fraud: Data/hora da primeira atividade fraudulenta
+  last_fraud: Data/hora da ultima atividade fraudulenta
+  games_list: Lista dos jogos em que cometeu fraude
+  affiliates: IDs dos afiliados associados
+  country_code: Codigo do pais do usuario (ex: BR)
+
+
+GLOSSARIO
+----------------------------------------
+  GGR = Gross Gaming Revenue = Apostas - Ganhos do jogador. Positivo = casa ganha.
+  NGR = Net Gaming Revenue = GGR - Bonus - Custos. Principal indicador de rentabilidade.
+  Net Deposit = Depositos - Saques. Positivo = jogador deixou dinheiro na plataforma.
+  LTV = Lifetime Value = Valor total que o jogador gerou para a casa ao longo da vida.
+  FTD = First Time Deposit = Primeiro deposito do jogador.
+  Rollback = Cancelamento de aposta. 100% rollback = jogador apostou e cancelou tudo.
+  Missoes = Desafios que premiam jogadores por completar acoes (ex: fazer X apostas).
+
+
+CRITERIOS DE DESBLOQUEIO
+----------------------------------------
+  O scoring considera 8 dimensoes:
+  1. Idade da conta: >90d = +20pts, >30d = +10pts, <30d = -10pts
+  2. GGR total: >R$500 = +25pts, >R$100 = +15pts, <-R$500 = -15pts
+  3. Net deposit: >R$500 = +15pts, >0 = +5pts, <-R$500 = -10pts
+  4. Dias ativos: >30 = +15pts, >7 = +10pts, 0 = -5pts
+  5. Recencia login: <7d = +10pts, <30d = +5pts
+  6. Severidade fraude: 100%RB + 0 turnover = -10pts, alto volume = -15pts
+  7. Classificacao risco: Muito Bom = +15pts, Muito Ruim = -15pts
+  8. Teve deposito: sim = +5pts, nao = -5pts
+
+  Score >= 30: DESBLOQUEAR (jogador valioso, fraude foi leve)
+  Score 10-29: AVALIAR (caso a caso, pode ter potencial)
+  Score < 10: MANTER BLOQUEADO (sem valor ou fraude grave)
+
+
+FONTE DOS DADOS
+----------------------------------------
+  Fraude: fraudadores_missoes_completo_com_external_id.csv
+  Risco: matriz_risco_multibet_2003.csv (computada em 20/03/2026)
+  Cadastro: ps_bi.dim_user (Athena)
+  Financeiro: ps_bi.fct_player_activity_daily (Athena)
+  Login: bireports_ec2.tbl_ecr (Athena)
+  Periodo: dados ate D-1 (29/03/2026)
+
+
+ACAO SUGERIDA
+----------------------------------------
+  DESBLOQUEAR: Jogadores com historico positivo para a casa.
+    Acao: desbloquear e monitorar por 30 dias.
+  AVALIAR: Casos intermediarios que podem ter potencial.
+    Acao: revisar manualmente, considerar desbloqueio com restricoes.
+  MANTER BLOQUEADO: Contas de baixo valor ou fraude grave.
+    Acao: manter bloqueado. Muitos sao contas criadas so para abusar.

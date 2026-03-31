@@ -1,0 +1,74 @@
+{
+  "athena_2026-03-23": {
+    "jogadores": 11594,
+    "logins": 15836,
+    "registros": 1029,
+    "ftds": 318,
+    "depositos": 508921.94,
+    "dep_count": 3730,
+    "saques": 540578.7,
+    "saq_count": 967,
+    "net_deposit": -31656.75999999995,
+    "casino_bets": 2289311.69,
+    "casino_wins": 2257671.54,
+    "casino_ggr": 31640.15,
+    "casino_margin": 1.382081353893755,
+    "casino_ggr_real": 29524.54,
+    "sb_bets": 160052.91,
+    "sb_wins": 155552.0,
+    "sb_ggr": 4500.91,
+    "sb_margin": 2.812138810846988,
+    "ggr_geral": 36141.06
+  },
+  "athena_2026-03-16": {
+    "jogadores": 22103,
+    "logins": 31745,
+    "registros": 2204,
+    "ftds": 955,
+    "depositos": 1010422.04,
+    "dep_count": 7844,
+    "saques": 878204.13,
+    "saq_count": 1725,
+    "net_deposit": 132217.91000000003,
+    "casino_bets": 3755005.07,
+    "casino_wins": 3535676.94,
+    "casino_ggr": 219328.13,
+    "casino_margin": 5.840954297300057,
+    "casino_ggr_real": 218757.63,
+    "sb_bets": 523883.87,
+    "sb_wins": 386087.96,
+    "sb_ggr": 137795.91,
+    "sb_margin": 26.30275866290749,
+    "ggr_geral": 357124.04
+  },
+  "athena_2026-03-09": {
+    "jogadores": 22875,
+    "logins": 34203,
+    "registros": 1984,
+    "ftds": 827,
+    "depositos": 1227576.64,
+    "dep_count": 8227,
+    "saques": 1095880.98,
+    "saq_count": 1901,
+    "net_deposit": 131695.65999999992,
+    "casino_bets": 5184474.86,
+    "casino_wins": 4858458.65,
+    "casino_ggr": 326016.21,
+    "casino_margin": 6.288316923191715,
+    "casino_ggr_real": 325932.91,
+    "sb_bets": 544495.14,
+    "sb_wins": 496937.04,
+    "sb_ggr": 47558.1,
+    "sb_margin": 8.734347931920935,
+    "ggr_geral": 373574.31
+  },
+  "bq_2026-03-23": {
+    "registros": 1416
+  },
+  "bq_2026-03-16": {
+    "registros": 2025
+  },
+  "bq_2026-03-09": {
+    "registros": 1950
+  }
+}
