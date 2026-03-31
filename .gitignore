@@ -90,3 +90,5 @@ Thumbs.db
 *.tmp
 ~$*
 google ads/*.json
+data/
+alerta-ftd/
