@@ -37,18 +37,13 @@ CACHE_TTL_SECONDS = 60 * 5  # 5 minutos (dados vem do PostgreSQL, nao Athena)
 # TIPOS DE CAMPANHA — usados nos filtros do dashboard
 # =====================================================================
 CAMPAIGN_TYPES = [
-    "Challenge",
-    "Cashback_VIP",
     "DailyFS",
     "RETEM",
+    "KLC",
+    "Challenge",
     "Lifecycle",
     "Gamificacao",
-    "CrossSell_Sports",
-    "Bonus_Generico",
-    "Reativacao_FTD",
-    "CX_Recovery",
-    "FreeSpins",
-    "Sem_Classificacao",
+    "Cashback",
 ]
 
 # =====================================================================

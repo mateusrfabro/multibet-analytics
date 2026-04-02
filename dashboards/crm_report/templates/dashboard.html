@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Performance - MultiBet</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+    --bg-primary: #0f0f1a;
+    --bg-secondary: #1a1a2e;
+    --bg-card: #1a1a2e;
+    --border: #2d2d44;
+    --purple: #8b5cf6;
+    --purple-dark: #6d28d9;
+    --purple-light: #a78bfa;
+    --purple-muted: #4c2d8a;
+    --green: #10b981;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --text-primary: #ffffff;
+    --text-secondary: #9ca3af;
+    --text-muted: #6b7280;
+    --table-row-alt: #111122;
+    --table-row-total: #1e1040;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg-primary); color:var(--text-primary); font-family:'Inter',system-ui,-apple-system,sans-serif; font-size:14px; line-height:1.5; }
+.sidebar { position:fixed; left:0; top:0; bottom:0; width:56px; background:var(--bg-secondary); border-right:1px solid var(--border); display:flex; flex-direction:column; align-items:center; padding-top:16px; z-index:10; }
+.sidebar-icon { width:36px; height:36px; border-radius:8px; margin-bottom:16px; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); cursor:pointer; transition:all 0.2s; }
+.sidebar-icon:hover, .sidebar-icon.active { background:var(--purple-muted); color:var(--purple); }
+.sidebar-icon svg { width:20px; height:20px; }
+.main { margin-left:56px; padding:24px 32px; }
+.header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.header-title { font-size:20px; font-weight:700; }
+.header-meta { color:var(--text-secondary); font-size:12px; }
+.header-meta .online { color:var(--green); }
+.btn-back { background:var(--bg-secondary); border:1px solid var(--border); color:var(--text-primary); padding:6px 16px; border-radius:6px; cursor:pointer; font-size:13px; }
+.section-header { display:flex; align-items:flex-start; justify-content:space-between; margin:24px 0 16px; flex-wrap:wrap; gap:12px; }
+.section-title { font-size:22px; font-weight:700; }
+.section-subtitle { color:var(--text-secondary); font-size:13px; margin-top:4px; max-width:600px; }
+.filters { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.filter-input { background:var(--bg-secondary); border:1px solid var(--border); color:var(--text-primary); padding:6px 12px; border-radius:6px; font-size:13px; }
+.filter-select { background:var(--bg-secondary); border:1px solid var(--border); color:var(--text-primary); padding:6px 12px; border-radius:6px; font-size:13px; }
+.btn-apply { background:var(--purple); border:none; color:#fff; padding:6px 20px; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px; }
+.btn-apply:hover { opacity:0.9; }
+.btn-clear { background:transparent; border:none; color:var(--text-secondary); padding:6px 12px; cursor:pointer; font-size:13px; }
+.kpi-row { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:24px; }
+.kpi-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:20px; text-align:center; }
+.kpi-label { color:var(--text-secondary); font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+.kpi-value { font-size:28px; font-weight:700; }
+.kpi-value.green { color:var(--green); }
+.kpi-value.red { color:var(--red); }
+.kpi-value.purple { color:var(--purple); }
+.kpi-value.yellow { color:var(--yellow); }
+.table-container { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; overflow-x:auto; margin-bottom:24px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { background:var(--bg-secondary); color:var(--text-secondary); text-transform:uppercase; font-size:11px; letter-spacing:0.5px; padding:12px 16px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; font-weight:600; cursor:pointer; }
+th:hover { color:var(--purple-light); }
+th .sort-icon { font-size:10px; margin-left:4px; }
+td { padding:10px 16px; border-bottom:1px solid var(--border); white-space:nowrap; }
+tr:nth-child(even) td { background:var(--table-row-alt); }
+tr.total td { background:var(--table-row-total); font-weight:700; }
+.positive { color:var(--green); }
+.negative { color:var(--red); }
+.chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+.chart-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:20px; }
+.chart-card.full { grid-column:1 / -1; }
+.chart-title { font-size:15px; font-weight:600; margin-bottom:16px; text-align:center; }
+.chart-subtitle { color:var(--text-secondary); font-size:12px; text-align:right; margin-bottom:8px; }
+.funnel { display:flex; flex-direction:column; align-items:center; gap:0; }
+.funnel-step { display:flex; align-items:center; justify-content:center; flex-direction:column; padding:12px 0; color:#fff; font-weight:600; position:relative; width:100%; min-height:48px; border-radius:4px; margin-bottom:2px; }
+.funnel-step .step-label { font-size:11px; text-transform:uppercase; letter-spacing:0.5px; opacity:0.9; }
+.funnel-step .step-value { font-size:20px; font-weight:700; }
+.funnel-step .step-pct { font-size:12px; opacity:0.8; }
+.section-divider { border:none; border-top:1px solid var(--border); margin:32px 0; }
+.section-label { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-secondary); margin-bottom:16px; }
+.table-footer { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; flex-wrap:wrap; gap:8px; }
+.table-footer-info { color:var(--text-secondary); font-size:12px; }
+.btn-export { background:transparent; border:1px solid var(--purple); color:var(--purple); padding:6px 16px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
+.btn-export:hover { background:var(--purple); color:#fff; }
+.pagination { display:flex; gap:4px; align-items:center; }
+.pagination button { background:var(--bg-secondary); border:1px solid var(--border); color:var(--text-primary); padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px; }
+.pagination button:hover { border-color:var(--purple); }
+.pagination button.active { background:var(--purple); border-color:var(--purple); }
+.pagination button:disabled { opacity:0.3; cursor:not-allowed; }
+.vip-cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:16px; margin-bottom:24px; }
+.vip-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:20px; }
+.vip-card-title { font-size:14px; font-weight:600; color:var(--purple-light); margin-bottom:12px; }
+.vip-stat { display:flex; justify-content:space-between; margin-bottom:6px; }
+.vip-stat-label { color:var(--text-secondary); font-size:12px; }
+.vip-stat-value { font-weight:600; font-size:13px; }
+.pending-box { background:#1a1520; border:1px solid #3d2d44; border-radius:10px; padding:16px 20px; margin-bottom:24px; }
+.pending-title { color:var(--yellow); font-size:13px; font-weight:600; margin-bottom:8px; }
+.pending-list { color:var(--text-secondary); font-size:12px; }
+.pending-list li { margin-bottom:4px; }
+.footer-info { color:var(--text-muted); font-size:11px; text-align:center; padding:24px 0; }
+.comparison-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:0; margin-bottom:24px; }
+.comparison-col { border:1px solid var(--border); padding:16px; text-align:center; }
+.comparison-col:first-child { border-radius:10px 0 0 10px; }
+.comparison-col:last-child { border-radius:0 10px 10px 0; }
+.comparison-period { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); margin-bottom:12px; }
+.comparison-metric { margin-bottom:10px; }
+.comparison-metric-label { font-size:11px; color:var(--text-secondary); }
+.comparison-metric-value { font-size:18px; font-weight:700; }
+.comparison-delta { font-size:12px; font-weight:600; }
+.loading { text-align:center; padding:60px; color:var(--text-secondary); }
+.loading .spinner { display:inline-block; width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--purple); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.error-box { background:#1a1015; border:1px solid var(--red); border-radius:10px; padding:20px; text-align:center; color:var(--red); margin:24px 0; }
+canvas { max-height:300px; }
+@media (max-width:768px) { .chart-grid { grid-template-columns:1fr; } .comparison-grid { grid-template-columns:1fr; } .vip-cards { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-icon active" title="CRM Report">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </div>
+    <div class="sidebar-icon" title="Refresh" onclick="refreshData()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+    </div>
+    <div class="sidebar-icon" title="Logout" onclick="window.location='/logout'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<!-- HEADER -->
+<div class="header">
+    <div>
+        <div class="header-title">CRM Report</div>
+        <div class="header-meta">MultiBet · <span class="online" id="statusDot">&#9679;</span> <span id="statusText">Carregando...</span> · Atualizado <span id="updatedAt">{{ now }}</span></div>
+    </div>
+</div>
+
+<!-- SECTION HEADER + FILTERS -->
+<div class="section-header">
+    <div>
+        <div class="section-title">Performance de Campanhas</div>
+        <div class="section-subtitle">Visao consolidada do desempenho das campanhas CRM: funil de conversao, impacto financeiro, ROI e comparativo antes/durante/depois.</div>
+    </div>
+    <div class="filters">
+        <input type="date" class="filter-input" id="filterDateFrom" value="{{ default_date_from }}">
+        <span style="color:var(--text-secondary)">&#8594;</span>
+        <input type="date" class="filter-input" id="filterDateTo" value="{{ default_date_to }}">
+        <select class="filter-select" id="filterType">
+            <option value="all">Todos os tipos</option>
+            {% for t in campaign_types %}
+            <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
+        </select>
+        <select class="filter-select" id="filterAlcance">
+            <option value="all">Todos os alcances</option>
+            <option value="Direcionada">Direcionada</option>
+            <option value="Base Inteira">Base Inteira</option>
+        </select>
+        <button class="btn-apply" onclick="loadData()">Aplicar</button>
+        <button class="btn-clear" onclick="clearFilters()">Limpar</button>
+    </div>
+</div>
+
+<!-- KPI CARDS — 6 KPIs recomendados pelo CRM analyst -->
+<div class="kpi-row" id="kpiRow">
+    <div class="kpi-card" title="Campanhas ativas no periodo (automation rules agrupadas)"><div class="kpi-label">Campanhas Ativas</div><div class="kpi-value purple" id="kpiCampanhas">-</div><div style="color:var(--text-muted);font-size:11px;margin-top:4px" id="kpiCampanhasTotal"></div></div>
+    <div class="kpi-card" title="Jogadores unicos impactados pelas campanhas CRM"><div class="kpi-label">Jogadores Impactados</div><div class="kpi-value" id="kpiPlayers">-</div></div>
+    <div class="kpi-card" title="Gross Gaming Revenue: receita bruta = apostas - ganhos dos jogadores"><div class="kpi-label">Receita (GGR)</div><div class="kpi-value green" id="kpiGGR">-</div></div>
+    <div class="kpi-card" title="Net Gaming Revenue: GGR descontando custo de bonus"><div class="kpi-label">NGR Liquido</div><div class="kpi-value green" id="kpiNGR">-</div></div>
+    <div class="kpi-card" title="Depositos menos saques da base impactada"><div class="kpi-label">Net Deposit</div><div class="kpi-value" id="kpiNetDeposit">-</div></div>
+    <div class="kpi-card" title="Retorno sobre investimento: NGR / (custo bonus + custo disparos)"><div class="kpi-label">ROI CRM</div><div class="kpi-value green" id="kpiROI">-</div></div>
+</div>
+
+<!-- TABELA PRINCIPAL -->
+<div class="table-container">
+<table id="campaignTable">
+<thead>
+<tr>
+    <th data-sort="first_exec" title="Data de inicio da campanha">Inicio <span class="sort-icon"></span></th>
+    <th data-sort="report_date">Dias Ativa <span class="sort-icon"></span></th>
+    <th data-sort="campaign_name">Campanha <span class="sort-icon"></span></th>
+    <th data-sort="campaign_type">Tipo <span class="sort-icon"></span></th>
+    <th title="Mecanica da campanha: o que o jogador precisa fazer">Mecanica <span class="sort-icon"></span></th>
+    <th data-sort="alcance" title="Direcionada = segmento especifico | Base Inteira = todos os jogadores">Alcance <span class="sort-icon"></span></th>
+    <th data-sort="canais_disparo" title="Canais de comunicacao usados pela campanha (Popup, SMS, WhatsApp, Push, Inbox)">Canais <span class="sort-icon"></span></th>
+    <th data-sort="segment_name">Segmento <span class="sort-icon"></span></th>
+    <th data-sort="status">Status <span class="sort-icon"></span></th>
+    <th data-sort="oferecidos" title="Users unicos impactados (j_automation_rule_progress)">Users <span class="sort-icon"></span></th>
+    <th data-sort="total_ggr" title="GGR da base impactada (bireports_ec2)">GGR (R$) <span class="sort-icon"></span></th>
+</tr>
+</thead>
+<tbody id="campaignBody">
+    <tr><td colspan="11" class="loading"><div class="spinner"></div><br>Carregando dados...</td></tr>
+</tbody>
+</table>
+<div class="table-footer">
+    <div class="table-footer-info" id="tableInfo">-</div>
+    <div class="pagination" id="pagination"></div>
+    <button class="btn-export" onclick="exportCSV()">&#8595; Exportar CSV</button>
+</div>
+</div>
+
+<!-- RESUMO POR TIPO DE CAMPANHA -->
+<div class="section-label">Resumo por Tipo de Campanha</div>
+<div class="table-container">
+<table>
+<thead><tr>
+    <th>Tipo</th><th title="Quantidade de campanhas logicas agrupadas">Campanhas</th><th title="Users unicos impactados pelas campanhas">Users</th><th title="Users que tiveram atividade financeira (turnover > 0) no periodo">Com Financeiro</th><th title="Taxa de conversao financeira: Com Financeiro / Users (%). Indica quantos users impactados geraram receita.">Taxa Conversao (%)</th><th title="Gross Gaming Revenue: receita bruta = apostas - ganhos dos jogadores">GGR (R$)</th><th title="Net Gaming Revenue: GGR descontando custo de bonus. Estimativa 85% do GGR.">NGR (R$)</th>
+</tr></thead>
+<tbody id="typeBody"><tr><td colspan="7" class="loading"><div class="spinner"></div></td></tr></tbody>
+</table>
+</div>
+
+<!-- GRAFICO: VOLUME DIARIO -->
+<div class="chart-grid">
+    <div class="chart-card full">
+        <div class="chart-title">Disparos vs Conversoes por Dia</div>
+        <div class="chart-subtitle">Enviados (total disparos CRM) vs Convertidos (clicaram no CTA) — fonte: Smartico j_communication</div>
+        <canvas id="chartDailyVolume" height="80"></canvas>
+    </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ROI E CUSTOS -->
+<div class="section-label">ROI e Custos</div>
+<div class="kpi-row" style="grid-template-columns:repeat(4, 1fr);" id="roiKpis">
+    <div class="kpi-card"><div class="kpi-label">Custo Bonus (BTR)</div><div class="kpi-value yellow" id="kpiCustoBonus">-</div></div>
+    <div class="kpi-card"><div class="kpi-label">Custo Disparos</div><div class="kpi-value yellow" id="kpiCustoDisparo">-</div></div>
+    <div class="kpi-card"><div class="kpi-label">Custo por Conversao</div><div class="kpi-value" id="kpiCPA">-</div></div>
+    <div class="kpi-card"><div class="kpi-label">Margem (GGR - Custo)</div><div class="kpi-value green" id="kpiMargem">-</div></div>
+</div>
+
+<div class="chart-grid">
+    <div class="chart-card full">
+        <div class="chart-title">Mapa de Campanhas — Alcance x GGR x Eficiencia</div>
+        <div class="chart-subtitle">Eixo X = Users (alcance) | Eixo Y = GGR (receita) | Tamanho = ROI (GGR/Custo Bonus — maior = melhor retorno) | Cor = Tipo</div>
+        <canvas id="chartBubble" height="110"></canvas>
+    </div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ORCAMENTO DE DISPAROS -->
+<div class="section-label">Orcamento de Disparos</div>
+<div class="table-container">
+<table>
+<thead><tr><th>Canal</th><th>Provedor</th><th>Custo Unitario</th><th>Enviados</th><th>Custo Total (R$)</th></tr></thead>
+<tbody id="dispatchBody"><tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr></tbody>
+</table>
+</div>
+
+<hr class="section-divider">
+
+<!-- TOP JOGOS -->
+<div class="section-label">Top Jogos — Base Impactada <span style="font-weight:400;text-transform:none;font-size:10px;color:var(--text-muted)">(um jogador joga varios jogos — users por jogo nao somam ao total unico do KPI)</span></div>
+<div class="table-container">
+<table>
+<thead><tr><th>Jogo</th><th>Users</th><th>Turnover (R$)</th><th>GGR (R$)</th><th>RTP (%)</th></tr></thead>
+<tbody id="gamesBody"><tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr></tbody>
+</table>
+</div>
+
+<!-- ANALISE VIP -->
+<div class="section-label">Analise por Grupo VIP</div>
+<div class="vip-cards" id="vipCards">
+    <div class="loading"><div class="spinner"></div></div>
+</div>
+
+<!-- RECUPERACAO (v1 — pendente implementacao) -->
+
+<hr class="section-divider">
+
+<!-- PENDENCIAS -->
+<div class="pending-box">
+    <div class="pending-title">&#9888; Itens pendentes de configuracao (input manual do CRM)</div>
+    <div class="pending-list">
+        <ul>
+            <li><strong>Metas de campanha</strong> — definidas pelo CRM antes de cada disparo (campo <code>meta_conversao_pct</code>)</li>
+            <li><strong>Verba mensal de disparos</strong> — limite orcamentario por canal (campo <code>budget_monthly_brl</code>)</li>
+            <li><strong>Custos de trafego (Google/Meta/TikTok)</strong> — sem API conectada, requer integracao futura</li>
+            <li><strong>Classificacao de campanhas</strong> — tipo (RETEM/DailyFS/Cashback) inferido pelo nome; ideal ter campo dedicado no Smartico</li>
+        </ul>
+    </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer-info" id="footerInfo">
+    Carregando...
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ====================================================================
+// STATE
+// ====================================================================
+let currentPage = 1;
+let currentSort = 'ggr_brl';
+let currentSortDir = 'DESC';
+let charts = {};
+
+// ====================================================================
+// FORMATTERS
+// ====================================================================
+function fmtBRL(v) {
+    if (v == null || isNaN(v)) return 'R$ 0';
+    const neg = v < 0 ? '-' : '';
+    const abs = Math.abs(v);
+    if (abs >= 1e6) return neg + 'R$ ' + (abs/1e6).toFixed(2).replace('.', ',') + ' mi';
+    return neg + 'R$ ' + abs.toLocaleString('pt-BR', {minimumFractionDigits: 0, maximumFractionDigits: 0}).replace(/,/g, 'X').replace(/\./g, '.').replace(/X/g, ',');
+}
+function fmtNum(v) { return (v || 0).toLocaleString('pt-BR'); }
+function fmtInt(v) { return (v || 0).toLocaleString('pt-BR').replace(/,/g, '.'); }
+function fmtPct(v) { return (v || 0).toFixed(1).replace('.', ',') + '%'; }
+function fmtROI(v) { return (v || 0).toFixed(1).replace('.', ',') + 'x'; }
+function fmtDate(d) { if (!d) return '-'; const p = d.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+
+// ====================================================================
+// FILTERS
+// ====================================================================
+function getFilters() {
+    return {
+        date_from: document.getElementById('filterDateFrom').value,
+        date_to: document.getElementById('filterDateTo').value,
+        campaign_type: document.getElementById('filterType').value,
+        alcance: document.getElementById('filterAlcance').value,
+    };
+}
+function clearFilters() {
+    document.getElementById('filterDateFrom').value = '{{ default_date_from }}';
+    document.getElementById('filterDateTo').value = '{{ default_date_to }}';
+    document.getElementById('filterType').value = 'all';
+    document.getElementById('filterAlcance').value = 'all';
+    currentPage = 1;
+    loadData();
+}
+
+// ====================================================================
+// LOAD DATA
+// ====================================================================
+function loadData() {
+    const f = getFilters();
+    const params = new URLSearchParams({
+        date_from: f.date_from,
+        date_to: f.date_to,
+        campaign_type: f.campaign_type,
+        alcance: f.alcance,
+        page: currentPage,
+        page_size: 25,
+        sort_by: currentSort,
+        sort_dir: currentSortDir,
+    });
+
+    document.getElementById('statusText').textContent = 'Consultando...';
+    document.getElementById('statusDot').style.color = 'var(--yellow)';
+
+    fetch('/api/data?' + params)
+        .then(r => { if (!r.ok) throw new Error('Erro ' + r.status); return r.json(); })
+        .then(data => {
+            if (data.error) throw new Error(data.error);
+            renderDashboard(data);
+            document.getElementById('statusText').textContent = 'Dados online';
+            document.getElementById('statusDot').style.color = 'var(--green)';
+            document.getElementById('updatedAt').textContent = data.updated_at || '-';
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('statusText').textContent = 'Erro ao carregar';
+            document.getElementById('statusDot').style.color = 'var(--red)';
+            document.getElementById('campaignBody').innerHTML =
+                '<tr><td colspan="11" class="error-box">Erro ao carregar dados: ' + err.message + '</td></tr>';
+        });
+}
+
+// ====================================================================
+// RENDER ALL
+// ====================================================================
+function renderDashboard(data) {
+    renderKPIs(data.kpis);
+    renderTable(data.campaigns);
+    renderTypeSummary(data.funnel_by_type);
+    renderDailyVolume(data.daily_volume);
+    renderROIKpis(data.kpis);
+    renderBubbleChart(data.campaigns.data);
+    renderDispatch(data.dispatch_budget);
+    renderGames(data.top_games);
+    renderVIP(data.vip_analysis);
+    // renderRecovery(data.recovery); // v1 — pendente implementacao
+    renderFooter(data);
+}
+
+// ====================================================================
+// KPIs
+// ====================================================================
+function renderKPIs(k) {
+    window._kpiPlayersAtivos = k.players_ativos || 0;
+    document.getElementById('kpiCampanhas').textContent = fmtInt(k.campanhas_ativas);
+    document.getElementById('kpiCampanhasTotal').textContent = 'de ' + fmtInt(k.campanhas_total) + ' no periodo';
+    document.getElementById('kpiPlayers').textContent = fmtInt(k.players_ativos);
+    document.getElementById('kpiGGR').textContent = fmtBRL(k.ggr_total);
+    document.getElementById('kpiGGR').className = 'kpi-value ' + (k.ggr_total >= 0 ? 'green' : 'red');
+    document.getElementById('kpiNGR').textContent = fmtBRL(k.ngr_total);
+    document.getElementById('kpiNGR').className = 'kpi-value ' + (k.ngr_total >= 0 ? 'green' : 'red');
+    const nd = k.net_deposit_total || 0;
+    document.getElementById('kpiNetDeposit').textContent = fmtBRL(nd);
+    document.getElementById('kpiNetDeposit').className = 'kpi-value ' + (nd >= 0 ? 'green' : 'red');
+    document.getElementById('kpiROI').textContent = fmtROI(k.roi_medio);
+    document.getElementById('kpiROI').className = 'kpi-value ' + (k.roi_medio >= 0 ? 'green' : 'red');
+}
+
+function renderROIKpis(k) {
+    document.getElementById('kpiCustoBonus').textContent = fmtBRL(k.custo_bonus_total);
+    document.getElementById('kpiCustoDisparo').textContent = fmtBRL(k.custo_disparo_total);
+    const cpa = k.custo_crm_total && k.players_ativos ? k.custo_crm_total / k.players_ativos : 0;
+    document.getElementById('kpiCPA').textContent = fmtBRL(cpa);
+    const margem = (k.ngr_total || 0) - (k.custo_crm_total || 0);
+    const el = document.getElementById('kpiMargem');
+    el.textContent = fmtBRL(margem);
+    el.className = 'kpi-value ' + (margem >= 0 ? 'green' : 'red');
+}
+
+// ====================================================================
+// TABELA PRINCIPAL
+// ====================================================================
+function renderTable(c) {
+    const tbody = document.getElementById('campaignBody');
+    if (!c.data || c.data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text-muted)">Nenhuma campanha encontrada para o periodo selecionado.</td></tr>';
+        document.getElementById('tableInfo').textContent = '0 registros';
+        document.getElementById('pagination').innerHTML = '';
+        return;
+    }
+
+    let html = '';
+    for (const r of c.data) {
+        const statusClass = r.status === 'ativa' ? 'positive' : '';
+        const alcanceClass = r.alcance === 'Base Inteira' ? 'style="color:var(--text-muted)"' : '';
+        const ggrClass = (r.total_ggr || 0) >= 0 ? 'positive' : 'negative';
+        const ggrVal = r.total_ggr ? fmtBRL(r.total_ggr) : '-';
+        // Mecanica por tipo
+        const mecanicas = {
+            'RETEM': 'Deposite + Aposte (min R$)',
+            'DailyFS': 'Free Spins diarios',
+            'Challenge': 'Quest por jogo (3 etapas)',
+            'KLC': 'Fidelidade Dep+Apost',
+            'Cashback': 'Cashback sobre perdas',
+            'Lifecycle': 'Missao Telegram',
+        };
+        const mecanica = mecanicas[r.campaign_type] || '-';
+        html += `<tr ${alcanceClass}>
+            <td>${r.first_exec || '-'}</td>
+            <td>${r.report_date || '-'}</td>
+            <td title="${r.campaign_id || ''}">${r.campaign_name || '-'}</td>
+            <td>${r.campaign_type || '-'}</td>
+            <td style="font-size:11px;color:var(--text-secondary)">${mecanica}</td>
+            <td>${r.alcance || '-'}</td>
+            <td style="font-size:11px">${r.canais_disparo || '-'}</td>
+            <td>${r.segment_name || '-'}</td>
+            <td class="${statusClass}">${r.status || '-'}</td>
+            <td>${fmtInt(r.oferecidos)}</td>
+            <td class="${ggrClass}">${ggrVal}</td>
+        </tr>`;
+    }
+    tbody.innerHTML = html;
+
+    // Pagination
+    const info = `Pagina ${c.page} de ${c.total_pages} (${fmtInt(c.total)} registros)`;
+    document.getElementById('tableInfo').textContent = info;
+
+    let pgHtml = '';
+    pgHtml += `<button ${c.page <= 1 ? 'disabled' : ''} onclick="goPage(${c.page - 1})">&laquo;</button>`;
+    const start = Math.max(1, c.page - 2);
+    const end = Math.min(c.total_pages, c.page + 2);
+    for (let i = start; i <= end; i++) {
+        pgHtml += `<button class="${i === c.page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+    }
+    pgHtml += `<button ${c.page >= c.total_pages ? 'disabled' : ''} onclick="goPage(${c.page + 1})">&raquo;</button>`;
+    document.getElementById('pagination').innerHTML = pgHtml;
+}
+
+function goPage(p) { currentPage = p; loadData(); }
+
+// Sort
+document.querySelectorAll('#campaignTable th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+        const col = th.dataset.sort;
+        if (currentSort === col) {
+            currentSortDir = currentSortDir === 'DESC' ? 'ASC' : 'DESC';
+        } else {
+            currentSort = col;
+            currentSortDir = 'DESC';
+        }
+        currentPage = 1;
+        loadData();
+    });
+});
+
+// ====================================================================
+// FUNIL
+// ====================================================================
+function renderFunnel(f) {
+    // Funil CRM: Segmentados > Entregues > Clicados > Abriram > Convertidos
+    // Nota: no Smartico, "clicaram" = qualquer interacao (fechar, minimizar, CTA)
+    // "abriram" = sessao ativa quando popup apareceu (subset de entregues)
+    // Por isso clicados > abertos em volume — clicaram inclui fechar/minimizar
+    const seg = f.segmentados || 0;
+    const steps = [
+        { label: 'Segmentados (enviados)', value: seg, pct: '100%', bg: 'var(--purple)', w: '100%' },
+        { label: 'Msg Entregue', value: f.entregues, pct: fmtPct(f.pct_entregues), bg: '#7c4ddb', w: seg > 0 ? Math.max(30, f.entregues/seg*100)+'%' : '85%' },
+        { label: 'Interagiram (clique/fechar)', value: f.clicados, pct: fmtPct(f.pct_clicados), bg: '#6a3dc8', w: seg > 0 ? Math.max(25, f.clicados/seg*100)+'%' : '70%' },
+        { label: 'Visualizaram (sessao ativa)', value: f.abertos, pct: fmtPct(f.pct_abertos), bg: '#5e2dc3', w: seg > 0 ? Math.max(20, f.abertos/seg*100)+'%' : '55%' },
+        { label: 'Convertidos (CTA)', value: f.convertidos, pct: fmtPct(f.pct_convertidos), bg: '#400dab', w: seg > 0 ? Math.max(15, f.convertidos/seg*100)+'%' : '40%' },
+    ];
+    let html = '';
+    for (const s of steps) {
+        html += `<div class="funnel-step" style="background:${s.bg};width:${s.w}">
+            <span class="step-label">${s.label}</span>
+            <span class="step-value">${fmtInt(s.value)}</span>
+            <span class="step-pct">(${s.pct})</span>
+        </div>`;
+    }
+    // Nota sobre etapas pendentes
+    html += '<div style="color:var(--text-muted);font-size:11px;margin-top:8px;text-align:center">Pendente v2: Apostaram (cross Athena) | Cumpriram condicao (j_bonuses)</div>';
+    document.getElementById('funnelContainer').innerHTML = html;
+}
+
+// ====================================================================
+// RESUMO POR TIPO
+// ====================================================================
+function renderTypeSummary(data) {
+    const tbody = document.getElementById('typeBody');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Sem dados.</td></tr>';
+        return;
+    }
+    let html = '';
+    let totUsers = 0, totFin = 0, totGGR = 0;
+    for (const r of data) {
+        const ggrClass = (r.ggr || 0) >= 0 ? 'positive' : 'negative';
+        const ngr = (r.ggr || 0) * 0.85; // Estimativa NGR = GGR * 85% (sem bonus_cost por tipo)
+        totUsers += r.oferecidos || 0;
+        totFin += r.completaram || 0;
+        totGGR += r.ggr || 0;
+        html += `<tr>
+            <td><strong>${r.campaign_type}</strong></td>
+            <td>${fmtInt(r.campanhas)}</td>
+            <td>${fmtInt(r.oferecidos)}</td>
+            <td>${fmtInt(r.completaram)}</td>
+            <td>${fmtPct(r.taxa_conversao)}</td>
+            <td class="${ggrClass}">${r.ggr ? fmtBRL(r.ggr) : '-'}</td>
+            <td class="${ggrClass}">${r.ggr ? fmtBRL(ngr) : '-'}</td>
+        </tr>`;
+    }
+    // Linha total — campanhas = soma de todas
+    const totCamps = data.reduce((s, r) => s + (r.campanhas || 0), 0);
+    const totTaxa = totUsers > 0 ? (totFin / totUsers * 100) : 0;
+    html += `<tr class="total">
+        <td>TOTAL</td>
+        <td>${fmtInt(totCamps)}</td>
+        <td>${fmtInt(totUsers)}</td>
+        <td>${fmtInt(totFin)}</td>
+        <td>${fmtPct(totTaxa)}</td>
+        <td class="${totGGR >= 0 ? 'positive' : 'negative'}">${fmtBRL(totGGR)}</td>
+        <td>-</td>
+    </tr>`;
+    tbody.innerHTML = html;
+}
+
+// ====================================================================
+// CHARTS
+// ====================================================================
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function renderFunnelByType(data) {
+    destroyChart('funnelByType');
+    const ctx = document.getElementById('chartFunnelByType');
+    if (!data || data.length === 0) return;
+    charts.funnelByType = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map(d => d.campaign_type),
+            datasets: [
+                { label: 'Oferecidos', data: data.map(d => d.oferecidos), backgroundColor: '#8b5cf6' },
+                { label: 'Completaram', data: data.map(d => d.completaram), backgroundColor: '#6d28d9' },
+                { label: 'Campanhas', data: data.map(d => d.campanhas), backgroundColor: '#4c1d95' },
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { labels: { color: '#9ca3af', font: { size: 11 } } } },
+            scales: {
+                x: { ticks: { color: '#9ca3af' }, grid: { color: '#2d2d44' } },
+                y: { ticks: { color: '#9ca3af', callback: v => v >= 1000 ? (v/1000)+'k' : v }, grid: { color: '#2d2d44' } },
+            }
+        }
+    });
+}
+
+function renderDailyVolume(data) {
+    destroyChart('dailyVolume');
+    const ctx = document.getElementById('chartDailyVolume');
+    if (!data || data.length === 0) return;
+    const convRate = data.map(d => d.enviados > 0 ? ((d.convertidos / d.enviados) * 100) : 0);
+    charts.dailyVolume = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map(d => { const p = d.date.split('-'); return p[2]+'/'+p[1]; }),
+            datasets: [
+                { label: 'Enviados', data: data.map(d => d.enviados), backgroundColor: 'rgba(139,92,246,0.6)', borderColor: '#8b5cf6', borderWidth: 1, yAxisID: 'y', order: 2, barPercentage: 0.8, categoryPercentage: 0.9 },
+                { label: 'Convertidos (CTA)', data: data.map(d => d.convertidos), backgroundColor: 'rgba(16,185,129,0.6)', borderColor: '#10b981', borderWidth: 1, yAxisID: 'y', order: 2, barPercentage: 0.8, categoryPercentage: 0.9 },
+                { label: 'Taxa Conversao (%)', data: convRate, type: 'line', borderColor: '#eab308', borderWidth: 2, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#eab308', yAxisID: 'y1', order: 1 },
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { labels: { color: '#9ca3af', font: { size: 11 } } }, tooltip: { callbacks: { label: function(ctx) { if (ctx.dataset.yAxisID === 'y1') return ctx.dataset.label + ': ' + ctx.raw.toFixed(1).replace('.',',') + '%'; return ctx.dataset.label + ': ' + fmtInt(ctx.raw); } } } },
+            scales: {
+                x: { ticks: { color: '#9ca3af', maxTicksLimit: 16, font: { size: 10 } }, grid: { color: '#2d2d44' } },
+                y: { position: 'left', title: { display: true, text: 'Volume disparos', color: '#9ca3af', font: { size: 10 } }, ticks: { color: '#9ca3af', callback: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v }, grid: { color: '#2d2d44' } },
+                y1: { position: 'right', title: { display: true, text: 'Conversao %', color: '#eab308', font: { size: 10 } }, ticks: { color: '#eab308', callback: v => v.toFixed(0) + '%' }, grid: { drawOnChartArea: false }, min: 0, max: 60 },
+            }
+        }
+    });
+}
+
+// Cores por tipo de campanha (consistente em todos os graficos)
+const TYPE_COLORS = {
+    'DailyFS': '#8b5cf6', 'RETEM': '#10b981', 'Challenge': '#eab308',
+    'Cashback': '#3b82f6', 'KLC': '#f97316', 'Lifecycle': '#6b7280',
+};
+function getTypeColor(t) { return TYPE_COLORS[t] || '#9ca3af'; }
+
+function renderBubbleChart(campaigns) {
+    destroyChart('bubble');
+    const ctx = document.getElementById('chartBubble');
+    if (!campaigns || campaigns.length === 0) return;
+
+    // Só campanhas direcionadas com GGR
+    const filtered = campaigns.filter(c => c.total_ggr && c.total_ggr !== 0 && c.alcance === 'Direcionada');
+    if (filtered.length === 0) return;
+
+    // Tamanho = ROI (GGR / Custo Bonus) — bolha GRANDE = melhor retorno
+    const rois = filtered.map(c => c.custo_bonus_brl > 0 ? Math.abs(c.total_ggr / c.custo_bonus_brl) : 0);
+    const maxROI = Math.max(...rois, 1);
+    const types = [...new Set(filtered.map(c => c.campaign_type))];
+
+    const datasets = types.map(type => {
+        const camps = filtered.filter(c => c.campaign_type === type);
+        return {
+            label: type,
+            backgroundColor: getTypeColor(type) + 'BB',
+            borderColor: getTypeColor(type),
+            borderWidth: 2,
+            hoverBorderWidth: 3,
+            data: camps.map(c => {
+                const roi = c.custo_bonus_brl > 0 ? (c.total_ggr / c.custo_bonus_brl) : 0;
+                const r = Math.max(6, Math.min(40, (Math.abs(roi) / maxROI) * 35 + 6));
+                return { x: c.oferecidos, y: c.total_ggr, r,
+                    _name: c.campaign_name, _type: c.campaign_type,
+                    _users: c.oferecidos, _ggr: c.total_ggr,
+                    _custo: c.custo_bonus_brl || 0,
+                    _roi: Math.round(roi * 10) / 10,
+                    _fin: c.fin_users || 0 };
+            }),
+        };
+    });
+
+    charts.bubble = new Chart(ctx, {
+        type: 'bubble',
+        data: { datasets },
+        options: {
+            responsive: true,
+            interaction: { mode: 'nearest', intersect: true },
+            plugins: {
+                legend: { position: 'top', labels: { color: '#9ca3af', font: { size: 11 }, usePointStyle: true, pointStyle: 'circle', padding: 15 } },
+                tooltip: {
+                    backgroundColor: '#1a1a2eF0', titleColor: '#fff', bodyColor: '#ccc',
+                    borderColor: '#2d2d44', borderWidth: 1, padding: 12,
+                    callbacks: {
+                        title: ctx => ctx[0].raw._name,
+                        label: ctx => {
+                            const d = ctx.raw;
+                            return ['Users: ' + fmtInt(d._users), 'GGR: ' + fmtBRL(d._ggr), 'Custo Bonus: ' + fmtBRL(d._custo), 'ROI: ' + d._roi + 'x'];
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: { title: { display: true, text: 'Users (alcance)', color: '#9ca3af' },
+                     ticks: { color: '#9ca3af' }, grid: { color: '#2d2d44' } },
+                y: { title: { display: true, text: 'GGR (R$)', color: '#9ca3af' },
+                     ticks: { color: '#9ca3af', callback: v => fmtBRL(v) }, grid: { color: '#2d2d44' } },
+            },
+        }
+    });
+}
+
+// ====================================================================
+// DISPATCH BUDGET TABLE
+// ====================================================================
+function renderDispatch(data) {
+    const tbody = document.getElementById('dispatchBody');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Sem dados de disparo no periodo.</td></tr>';
+        return;
+    }
+    let html = '';
+    let totalSent = 0, totalCost = 0;
+    for (const r of data) {
+        totalSent += r.total_sent;
+        totalCost += r.custo_total_brl;
+        html += `<tr>
+            <td>${r.channel}</td><td>${r.provider}</td>
+            <td>R$ ${r.custo_unitario.toFixed(3).replace('.', ',')}</td>
+            <td>${fmtInt(r.total_sent)}</td><td>${fmtBRL(r.custo_total_brl)}</td>
+        </tr>`;
+    }
+    html += `<tr class="total"><td>Total</td><td></td><td></td><td>${fmtInt(totalSent)}</td><td>${fmtBRL(totalCost)}</td></tr>`;
+    tbody.innerHTML = html;
+}
+
+// ====================================================================
+// TOP GAMES TABLE
+// ====================================================================
+function renderGames(rawData) {
+    const tbody = document.getElementById('gamesBody');
+    // Aceita tanto array (legado) quanto {games, unique_players}
+    const data = Array.isArray(rawData) ? rawData : (rawData.games || []);
+    const uniquePlayers = Array.isArray(rawData) ? 0 : (rawData.unique_players || 0);
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Sem dados de jogos no periodo.</td></tr>';
+        return;
+    }
+    let html = '';
+    let totTurnover = 0, totGGR = 0;
+    for (const r of data) {
+        const ggrClass = r.ggr_brl >= 0 ? 'positive' : 'negative';
+        const rtpClass = r.rtp_pct > 100 ? 'negative' : (r.rtp_pct < 90 ? 'positive' : '');
+        totTurnover += r.turnover_brl || 0;
+        totGGR += r.ggr_brl || 0;
+        html += `<tr>
+            <td>${r.game_name}</td><td>${fmtInt(r.users)}</td>
+            <td>${fmtBRL(r.turnover_brl)}</td><td class="${ggrClass}">${fmtBRL(r.ggr_brl)}</td>
+            <td class="${rtpClass}">${fmtPct(r.rtp_pct)}</td>
+        </tr>`;
+    }
+    // Linha total — users unicos calculados no backend (COUNT DISTINCT)
+    const totRTP = totTurnover > 0 ? ((1 - totGGR/totTurnover) * 100) : 0;
+    html += `<tr class="total">
+        <td>TOTAL</td><td title="Users unicos que jogaram (sem duplicatas entre jogos)">${uniquePlayers > 0 ? fmtInt(uniquePlayers) : '—'}</td>
+        <td>${fmtBRL(totTurnover)}</td><td class="${totGGR >= 0 ? 'positive' : 'negative'}">${fmtBRL(totGGR)}</td>
+        <td>${fmtPct(totRTP)}</td>
+    </tr>`;
+    tbody.innerHTML = html;
+}
+
+// ====================================================================
+// VIP ANALYSIS
+// ====================================================================
+function renderVIP(data) {
+    const container = document.getElementById('vipCards');
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:20px">Sem dados VIP no periodo.</div>';
+        return;
+    }
+    const icons = { 'Elite': '&#9733;', 'Key Account': '&#9734;', 'High Value': '&#9734;' };
+    let html = '';
+    for (const r of data) {
+        const icon = icons[r.vip_tier] || '';
+        html += `<div class="vip-card">
+            <div class="vip-card-title">${icon} ${r.vip_tier}</div>
+            <div class="vip-stat"><span class="vip-stat-label">Usuarios</span><span class="vip-stat-value">${fmtInt(r.users)}</span></div>
+            <div class="vip-stat"><span class="vip-stat-label">NGR Total</span><span class="vip-stat-value positive">${fmtBRL(r.ngr_total)}</span></div>
+            <div class="vip-stat"><span class="vip-stat-label">NGR Medio</span><span class="vip-stat-value">${fmtBRL(r.ngr_medio)}</span></div>
+            <div class="vip-stat"><span class="vip-stat-label">APD</span><span class="vip-stat-value">${(r.apd || 0).toFixed(1).replace('.', ',')}</span></div>
+        </div>`;
+    }
+    container.innerHTML = html;
+}
+
+// ====================================================================
+// RECOVERY TABLE
+// ====================================================================
+function renderRecovery(data) {
+    const tbody = document.getElementById('recoveryBody');
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted)">Sem dados de recuperacao no periodo.</td></tr>';
+        return;
+    }
+    let html = '';
+    for (const r of data) {
+        const churnClass = r.churn_d7_pct > 60 ? 'negative' : 'positive';
+        html += `<tr>
+            <td>${r.channel}</td>
+            <td>${fmtInt(r.inativos_impactados)}</td>
+            <td>${fmtInt(r.reengajados)}</td>
+            <td>${fmtInt(r.depositaram)}</td>
+            <td>${r.tempo_medio.toFixed(1).replace('.', ',')}h</td>
+            <td class="${churnClass}">${fmtPct(r.churn_d7_pct)}</td>
+        </tr>`;
+    }
+    tbody.innerHTML = html;
+}
+
+// ====================================================================
+// FOOTER
+// ====================================================================
+function renderFooter(data) {
+    const f = data.filters || {};
+    document.getElementById('footerInfo').innerHTML =
+        `Dados atualizados: ${data.updated_at || '-'} BRT &middot; ` +
+        `Periodo: ${fmtDate(f.date_from)} a ${fmtDate(f.date_to)} &middot; ` +
+        `Fonte: BigQuery (Smartico CRM) + Athena (Data Lake) via CSVs &middot; ` +
+        `Script: <code>scripts/extract_crm_csvs_marco.py</code>`;
+}
+
+// ====================================================================
+// EXPORT CSV
+// ====================================================================
+function exportCSV() {
+    const f = getFilters();
+    const params = new URLSearchParams({
+        date_from: f.date_from,
+        date_to: f.date_to,
+        campaign_type: f.campaign_type,
+        channel: f.channel,
+    });
+    window.location.href = '/api/export/csv?' + params;
+}
+
+// ====================================================================
+// REFRESH
+// ====================================================================
+function refreshData() {
+    fetch('/api/refresh', { method: 'POST' })
+        .then(() => loadData())
+        .catch(err => console.error(err));
+}
+
+// ====================================================================
+// INIT
+// ====================================================================
+loadData();
+</script>
+</body>
+</html>

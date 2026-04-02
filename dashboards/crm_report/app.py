@@ -152,7 +152,7 @@ def api_data():
     date_from = request.args.get("date_from", d_from)
     date_to = request.args.get("date_to", d1)
     campaign_type = request.args.get("campaign_type", "all")
-    channel = request.args.get("channel", "all")
+    alcance = request.args.get("alcance", "all")
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", DEFAULT_PAGE_SIZE))
     sort_by = request.args.get("sort_by", "ggr_brl")
@@ -163,7 +163,7 @@ def api_data():
             date_from=date_from,
             date_to=date_to,
             campaign_type=campaign_type,
-            channel=channel,
+            alcance=alcance,
             page=page,
             page_size=page_size,
             sort_by=sort_by,
@@ -173,7 +173,7 @@ def api_data():
             "date_from": date_from,
             "date_to": date_to,
             "campaign_type": campaign_type,
-            "channel": channel,
+            "alcance": alcance,
         }
         data["updated_at"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         return jsonify(data)
