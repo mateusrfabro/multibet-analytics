@@ -1,3 +1,80 @@
+#!/bin/bash
+# =================================================================
+# DEPLOY: Grandes Ganhos v2 (Athena) na EC2
+# Cola TUDO no terminal SSH da EC2.
+#
+# O QUE FAZ:
+#   - Substitui pipelines/grandes_ganhos.py (BigQuery -> Athena)
+#   - Substitui run_grandes_ganhos.sh (adiciona venv activation)
+#   - Reativa o cron diario
+#
+# O QUE NAO FAZ:
+#   - NAO altera db/ (athena.py, supernova.py ja existem)
+#   - NAO altera outros pipelines
+#   - NAO altera outras entradas do cron
+#   - NAO instala pacotes (pyathena ja esta instalado)
+# =================================================================
+set -e
+
+echo "========================================="
+echo "DEPLOY GRANDES GANHOS v2 (Athena)"
+echo "========================================="
+
+cd /home/ec2-user/multibet
+
+# 1. Verificar pre-requisitos
+echo "[1/5] Verificando pre-requisitos..."
+ERRORS=0
+
+if [ ! -d "venv" ]; then
+    echo "  ERRO: venv/ nao existe"
+    ERRORS=1
+fi
+if [ ! -f "db/athena.py" ]; then
+    echo "  ERRO: db/athena.py nao existe (deploy ETL aquisicao primeiro)"
+    ERRORS=1
+fi
+if [ ! -f "db/supernova.py" ]; then
+    echo "  ERRO: db/supernova.py nao existe"
+    ERRORS=1
+fi
+if [ ! -f ".env" ]; then
+    echo "  ERRO: .env nao existe"
+    ERRORS=1
+fi
+
+# Verifica se pyathena esta instalado
+source venv/bin/activate
+if ! python3 -c "import pyathena" 2>/dev/null; then
+    echo "  ERRO: pyathena nao instalado no venv"
+    ERRORS=1
+fi
+
+# Verifica se variaveis Athena estao no .env
+if ! grep -q "ATHENA_AWS_ACCESS_KEY_ID" .env; then
+    echo "  ERRO: ATHENA_AWS_ACCESS_KEY_ID nao encontrado no .env"
+    ERRORS=1
+fi
+
+if [ $ERRORS -eq 1 ]; then
+    echo "  ABORTANDO: corrija os erros acima antes de continuar"
+    exit 1
+fi
+
+echo "  OK: todos os pre-requisitos atendidos"
+
+# 2. Backup do arquivo antigo
+echo "[2/5] Backup do pipeline antigo..."
+if [ -f "pipelines/grandes_ganhos.py" ]; then
+    cp pipelines/grandes_ganhos.py "pipelines/grandes_ganhos.py.bkp_$(date +%Y%m%d_%H%M%S)"
+    echo "  OK: backup criado"
+else
+    echo "  SKIP: arquivo antigo nao existe"
+fi
+
+# 3. Criar novo pipeline (Athena)
+echo "[3/5] Atualizando pipelines/grandes_ganhos.py..."
+cat > pipelines/grandes_ganhos.py << 'PYEOF'
 """
 Pipeline: Grandes Ganhos do Dia (v2 — Athena)
 ===============================================
@@ -40,7 +117,6 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-# --- DDL ---------------------------------------------------------------
 DDL_SCHEMA = "CREATE SCHEMA IF NOT EXISTS multibet;"
 
 DDL_TABLE = """
@@ -63,7 +139,6 @@ CREATE INDEX IF NOT EXISTS idx_gg_event_time
     ON multibet.grandes_ganhos (event_time DESC);
 """
 
-# --- SQL Athena ---------------------------------------------------------
 QUERY_ATHENA_TEMPLATE = """
 WITH game_catalog AS (
     SELECT c_game_id, c_game_desc, c_vendor_id
@@ -124,7 +199,6 @@ ORDER BY w.win_amount DESC
 LIMIT 50
 """
 
-# --- SQL Super Nova DB (mapeamento de imagens) --------------------------
 QUERY_MAPPING = """
 SELECT game_name_upper, game_image_url, game_slug
 FROM multibet.game_image_mapping
@@ -253,3 +327,57 @@ if __name__ == "__main__":
     setup_table()
     refresh()
     log.info("=== Pipeline concluido ===")
+PYEOF
+echo "  OK: pipeline atualizado"
+
+# 4. Atualizar wrapper do cron (corrige falta de venv activation)
+echo "[4/5] Atualizando run_grandes_ganhos.sh..."
+cat > run_grandes_ganhos.sh << 'SHEOF'
+#!/bin/bash
+# Grandes Ganhos v2 — cron diario (00:30 BRT = 03:30 UTC)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_DIR="$SCRIPT_DIR/pipelines/logs"
+mkdir -p "$LOG_DIR"
+LOGFILE="$LOG_DIR/grandes_ganhos_$(date +%Y-%m-%d).log"
+echo "=========================================" >> "$LOGFILE"
+echo "Inicio: $(date '+%Y-%m-%d %H:%M:%S')" >> "$LOGFILE"
+cd "$SCRIPT_DIR"
+source venv/bin/activate
+python3 pipelines/grandes_ganhos.py >> "$LOGFILE" 2>&1
+EXIT_CODE=$?
+echo "Fim: $(date '+%Y-%m-%d %H:%M:%S') | Exit code: $EXIT_CODE" >> "$LOGFILE"
+echo "" >> "$LOGFILE"
+exit $EXIT_CODE
+SHEOF
+chmod +x run_grandes_ganhos.sh
+echo "  OK: wrapper atualizado (com venv activation)"
+
+# 5. Reativar cron (ADICIONA sem alterar existentes)
+echo "[5/5] Reativando cron diario..."
+CRON_LINE="30 3 * * * /home/ec2-user/multibet/run_grandes_ganhos.sh"
+if crontab -l 2>/dev/null | grep -q "run_grandes_ganhos"; then
+    echo "  Cron existente encontrado. Substituindo..."
+    # Remove a entrada antiga e adiciona a nova
+    (crontab -l 2>/dev/null | grep -v "grandes_ganhos"; echo "$CRON_LINE") | crontab -
+    echo "  OK: cron atualizado"
+else
+    (crontab -l 2>/dev/null; echo "$CRON_LINE") | crontab -
+    echo "  OK: cron adicionado"
+fi
+
+echo ""
+echo "========================================="
+echo "DEPLOY COMPLETO!"
+echo "========================================="
+echo ""
+echo "Crontab atual:"
+crontab -l
+echo ""
+echo "Proximo passo: testar manualmente"
+echo "  cd /home/ec2-user/multibet"
+echo "  source venv/bin/activate"
+echo "  python3 pipelines/grandes_ganhos.py"
+echo ""
+echo "Verificar logs:"
+echo "  tail -f pipelines/logs/grandes_ganhos_$(date +%Y-%m-%d).log"
+echo "========================================="
