@@ -153,6 +153,112 @@ crontab -e
 
 ---
 
+## Matriz de Risco — cron diario (02:00 BRT = 05:00 UTC)
+
+Classifica 100% da base de jogadores em 5 tiers de risco/saude via 21 tags comportamentais.
+Executa 21 queries no Athena, calcula scores, persiste snapshots historicos no PostgreSQL.
+
+### Arquivos
+
+```
+multibet/
+├── pipelines/
+│   └── risk_matrix_pipeline.py   ← pipeline principal (21 tags)
+├── sql/
+│   └── risk_matrix/
+│       ├── REGULAR_DEPOSITOR.sql  ← 1 SQL por tag (21 total)
+│       ├── PROMO_ONLY.sql
+│       ├── ... (21 arquivos)
+│       └── ROLLBACK_PLAYER.sql
+├── run_risk_matrix.sh            ← wrapper do cron
+└── output/                       ← CSVs + legendas (gerados automaticamente)
+```
+
+### Deploy (passo a passo)
+
+```bash
+# 1. Na maquina LOCAL — copiar arquivos para EC2 ETL via SCP
+#    (ajustar IP se necessario — EC2 ETL nao tem Elastic IP)
+
+EC2_IP="54.197.63.138"
+KEY="C:/Users/NITRO/Downloads/etl-key.pem"
+
+# Pipeline
+scp -i "$KEY" ec2_deploy/pipelines/risk_matrix_pipeline.py \
+    ec2-user@$EC2_IP:/home/ec2-user/multibet/pipelines/
+
+# SQLs (21 arquivos)
+ssh -i "$KEY" ec2-user@$EC2_IP "mkdir -p /home/ec2-user/multibet/sql/risk_matrix"
+scp -i "$KEY" ec2_deploy/sql/risk_matrix/*.sql \
+    ec2-user@$EC2_IP:/home/ec2-user/multibet/sql/risk_matrix/
+
+# Wrapper cron
+scp -i "$KEY" ec2_deploy/run_risk_matrix.sh \
+    ec2-user@$EC2_IP:/home/ec2-user/multibet/
+
+# Deploy script
+scp -i "$KEY" ec2_deploy/deploy_risk_matrix.sh \
+    ec2-user@$EC2_IP:/home/ec2-user/multibet/
+
+# 2. Conectar na EC2 via SSH
+ssh -i "$KEY" ec2-user@$EC2_IP
+
+# 3. Rodar o deploy
+cd /home/ec2-user/multibet
+chmod +x deploy_risk_matrix.sh
+./deploy_risk_matrix.sh
+```
+
+### Teste manual
+
+```bash
+cd /home/ec2-user/multibet
+source venv/bin/activate
+
+# Dry-run (apenas CSV, sem gravar PostgreSQL)
+python3 pipelines/risk_matrix_pipeline.py --dry-run
+
+# Execucao completa (CSV + PostgreSQL)
+python3 pipelines/risk_matrix_pipeline.py
+
+# Apenas tags especificas
+python3 pipelines/risk_matrix_pipeline.py --only VIP_WHALE_PLAYER FAST_CASHOUT
+```
+
+### Crontab
+
+```
+# Matriz de Risco — diario 02:00 BRT (05:00 UTC)
+0 5 * * * /home/ec2-user/multibet/run_risk_matrix.sh
+```
+
+> Roda diariamente as 02:00 BRT. Executa 21 tags, pivota, calcula scores,
+> persiste snapshot no PostgreSQL (multibet.risk_tags). Idempotente por data.
+> Tempo estimado: 15-30 minutos (21 queries Athena + COPY PostgreSQL).
+
+### Logs
+
+```bash
+tail -f pipelines/logs/risk_matrix_$(date +%Y-%m-%d).log
+```
+
+### Output
+
+```bash
+ls -la output/risk_matrix_*
+# risk_matrix_YYYY-MM-DD_FINAL.csv   — CSV com todos os jogadores
+# risk_matrix_YYYY-MM-DD_legenda.txt — dicionario de colunas
+```
+
+### Destino PostgreSQL
+
+- **Schema:** multibet
+- **Tabela:** risk_tags
+- **Chave:** (label_id, user_id, snapshot_date) — snapshots historicos
+- Idempotente: DELETE do snapshot do dia + INSERT
+
+---
+
 ## Observações
 - A senha do Redshift expira periodicamente — atualizar no `.env` quando necessário.
 - O IP do bastion (`supernova.py`) pode mudar se a EC2 não tiver Elastic IP.

@@ -1,0 +1,139 @@
+======================================================================
+COMPARATIVO MATRIZ DE RISCO — v1 (07/04) vs v2 (09/04)
+======================================================================
+
+CONTEXTO
+--------
+A Matriz de Risco foi migrada de BigQuery (Smartico) para Athena (Iceberg)
+e passou por recalibracao de scores, normalizacao e base de jogadores.
+
+As duas versoes NAO sao diretamente comparaveis porque usam:
+  - Fontes diferentes (BigQuery vs Athena)
+  - Numero de tags diferente (10 vs 21)
+  - Formula de normalizacao diferente
+  - Base de jogadores diferente
+
+Este comparativo documenta as mudancas para rastreabilidade.
+
+======================================================================
+1. MUDANCAS ESTRUTURAIS
+======================================================================
+
+| Dimensao              | v1 (07/04)                | v2 (09/04)                |
+|-----------------------|---------------------------|---------------------------|
+| Fonte de dados        | BigQuery Smartico         | AWS Athena (Iceberg)      |
+| Base de jogadores     | So ativos 90d             | Deposito OU aposta 90d    |
+| Numero de tags        | 10                        | 21                        |
+| Tags positivas        | ~4                        | 12                        |
+| Tags negativas        | ~6                        | 8                         |
+| Formula normalizacao  | range=151 (-35 a +116)    | range=85 (-35 a +50)      |
+| Faixa "Bom"           | 70-85                     | 51-75                     |
+| Faixa "Mediano"       | 50-69                     | 26-50                     |
+| Coluna tier           | classificacao             | tier (view compativel)    |
+| Pipeline              | export_smartico_risk.py   | risk_matrix_pipeline.py   |
+| Frequencia            | Manual                    | Cron diario 02:00 BRT     |
+
+======================================================================
+2. DISTRIBUICAO DE TIERS — COMPARATIVO
+======================================================================
+
+| Tier       | v1 (07/04) |   %  | v2 corrigida |   %  | Nota                   |
+|------------|-----------|------|-------------|------|------------------------|
+| Muito Bom  |    35.694 | 18.0 |     (*)     |  (*) | Range ampliado         |
+| Bom        |    47.705 | 24.0 |     (*)     |  (*) | Mais tags positivas    |
+| Mediano    |    89.114 | 44.8 |     (*)     |  (*) | Maioria esperada aqui  |
+| Ruim       |    16.506 |  8.3 |     (*)     |  (*) | Filtro status corrigido|
+| Muito Ruim |     9.680 |  4.9 |     (*)     |  (*) | Novas tags negativas   |
+| SEM SCORE  |         0 |  0.0 |     (*)     |  (*) | Agora explicito        |
+| TOTAL      |   198.699 |      |     (*)     |      |                        |
+
+(*) Sera preenchido apos o pipeline v2 corrigido terminar de rodar.
+
+======================================================================
+3. CORRECOES APLICADAS NA v2 (09/04)
+======================================================================
+
+3.1 MULTI_GAME_PLAYER — HAVING corrigido
+  ANTES: HAVING COUNT(DISTINCT session_id) > 1 (2+ sessoes)
+  AGORA: HAVING COUNT(DISTINCT session_id) >= 3 (3+ sessoes)
+  Motivo: Alinhamento com spec Notion (Mauro confirmou 09/04)
+
+3.2 Formula de normalizacao recalibrada
+  ANTES: P05=-25, P95=25, range=50 (score bruto 6 -> norm 62 = Bom)
+  AGORA: P05=-35, P95=50, range=85 (score bruto 6 -> norm 48 = Mediano)
+  Motivo: Range de 50 era muito estreito, inflava tiers altos
+
+3.3 Base filtrada por atividade financeira
+  ANTES: Todos os jogadores nao-teste (1.17M, 84% SEM SCORE)
+  AGORA: So quem tem deposito OU aposta nos ultimos 90 dias
+  Motivo: SEM SCORE nao agrega valor, inflava dataset
+
+3.4 Filtro c_txn_status = 'SUCCESS' adicionado em 4 SQLs
+  - ENGAGED_PLAYER (sessoes)
+  - RG_ALERT_PLAYER (sessoes)
+  - CASHOUT_AND_RUN (atividade recente)
+  - SUSTAINED_PLAYER (atividade pos-saque)
+  Motivo: Sem o filtro, transacoes falhas inflavam contagens
+
+3.5 RG_ALERT_PLAYER — Score mantido em +1
+  Nota do Mauro (07/04): deveria ser 0 ou -5
+  Decisao: manter +1 alinhado com Notion. P0 pendente.
+
+3.6 CASHOUT_AND_RUN — Logica mantida
+  Decisao do Mauro (09/04): manter deteccao de inatividade atual.
+  Versao por par especifico pode entrar em revisao futura.
+
+======================================================================
+4. TAGS DA MATRIZ v2 (21 tags)
+======================================================================
+
+  # | Tag                     | Score | Tipo
+ ---+-------------------------+-------+---------
+  1 | REGULAR_DEPOSITOR       |   +10 | Positivo
+  2 | PROMO_ONLY              |   -15 | Negativo
+  3 | ZERO_RISK_PLAYER        |     0 | Neutro
+  4 | FAST_CASHOUT            |   -25 | Negativo
+  5 | SUSTAINED_PLAYER        |   +15 | Positivo
+  6 | NON_BONUS_DEPOSITOR     |   +10 | Positivo
+  7 | PROMO_CHAINER           |   -10 | Negativo
+  8 | CASHOUT_AND_RUN         |   -25 | Negativo
+  9 | REINVEST_PLAYER         |   +15 | Positivo
+ 10 | NON_PROMO_PLAYER        |   +10 | Positivo
+ 11 | ENGAGED_PLAYER          |   +10 | Positivo
+ 12 | RG_ALERT_PLAYER         |    +1 | Positivo
+ 13 | BEHAV_RISK_PLAYER       |   -10 | Negativo
+ 14 | POTENCIAL_ABUSER        |    -5 | Negativo
+ 15 | PLAYER_REENGAGED        |   +30 | Positivo
+ 16 | SLEEPER_LOW_PLAYER      |    +5 | Positivo
+ 17 | VIP_WHALE_PLAYER        |   +30 | Positivo
+ 18 | WINBACK_HI_VAL_PLAYER   |   +25 | Positivo
+ 19 | BEHAV_SLOTGAMER         |    +5 | Positivo
+ 20 | MULTI_GAME_PLAYER       |   -10 | Negativo
+ 21 | ROLLBACK_PLAYER         |   -15 | Negativo
+
+======================================================================
+5. FORMULA DE NORMALIZACAO v2
+======================================================================
+
+  score_norm = (score_bruto - (-35)) / 85 * 100
+  score_norm = (score_bruto + 35) / 85 * 100
+
+  Limitado entre 0 e 100.
+
+  | score_bruto | score_norm | tier        |
+  |-------------|-----------|-------------|
+  |         -35 |       0.0 | Muito Ruim  |
+  |         -25 |      11.8 | Ruim        |
+  |         -10 |      29.4 | Mediano     |
+  |           0 |      41.2 | Mediano     |
+  |          +6 |      48.2 | Mediano     |
+  |         +10 |      52.9 | Bom         |
+  |         +20 |      64.7 | Bom         |
+  |         +35 |      82.4 | Muito Bom   |
+  |         +50 |     100.0 | Muito Bom   |
+
+======================================================================
+Responsavel: Mateus Fabro (Squad 3 — Intelligence Engine)
+Data: 2026-04-09
+Contato: Mateus | Mauro (senior analytics)
+======================================================================

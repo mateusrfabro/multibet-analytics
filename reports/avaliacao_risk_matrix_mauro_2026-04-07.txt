@@ -1,0 +1,396 @@
+================================================================================
+AVALIACAO TECNICA — Repositorio risk-matrix (Mauro / GL-Analytics-M-L)
+================================================================================
+Avaliador: Agente de Riscos — Squad 3 Intelligence Engine
+Data: 2026-04-07
+Contexto: Analise da Matriz de Risco implementada em risk_matrix_pipeline.py
+          + 21 SQLs (scripts/sql/risk_matrix/) + legenda + persistencia PG
+
+NOTA: O repositorio GitHub (GL-Analytics-M-L/risk-matrix) e privado e nao foi
+possivel acessa-lo diretamente. Esta avaliacao foi feita com base na
+implementacao local completa que ja temos: pipeline Python, 21 queries SQL,
+CSV gerado em 06/04/2026, legenda, e nota de entrega ao Mauro.
+================================================================================
+
+
+1. O QUE A MATRIZ DE RISCO FAZ
+================================================================================
+
+A Matriz de Risco e um sistema de CLASSIFICACAO COMPORTAMENTAL de jogadores que
+atribui tags binarias (tem/nao tem) a cada jogador com base em 21 criterios.
+Cada tag carrega um score fixo (positivo ou negativo). A soma das tags ativas
+gera um score_bruto, que e normalizado para 0-100 e classificado em tiers.
+
+Escopo: 100% da base de jogadores (nao-teste). Janela de 90 dias.
+Output: 1 linha por jogador com 21 colunas de tags + score + tier.
+Destino: CSV + PostgreSQL (multibet.risk_tags) com snapshots historicos.
+
+Tiers:
+  > 75  = Muito Bom  (jogador legitimo)
+  51-75 = Bom        (ativo, deposita)
+  26-50 = Mediano    (misto)
+  11-25 = Ruim       (dependente de promos)
+  <= 10 = Muito Ruim (investigar)
+
+
+2. AS 21 TAGS E SEUS SCORES
+================================================================================
+
+TAGS POSITIVAS (indicam jogador saudavel):
+  +30  VIP_WHALE_PLAYER      — GGR > R$15k + 10+ dias ativos
+  +30  PLAYER_REENGAGED      — Reativado apos 30d inativo, 3+ dias ativos
+  +25  WINBACK_HI_VAL_PLAYER — Reativado, GGR R$8k-R$15k, 5+ dias ativos
+  +15  SUSTAINED_PLAYER      — Saca e continua jogando
+  +15  REINVEST_PLAYER       — Saca e deposita novamente em ate 7 dias
+  +10  REGULAR_DEPOSITOR     — Media >= 3 depositos/mes
+  +10  NON_BONUS_DEPOSITOR   — Deposita sem usar bonus
+  +10  NON_PROMO_PLAYER      — Ativo ha 7d sem promo
+  +10  ENGAGED_PLAYER        — Media 3-10 sessoes/dia
+   +5  BEHAV_SLOTGAMER       — 70%+ apostas em casino + tem deposito
+   +5  SLEEPER_LOW_PLAYER    — Ativo sazonalmente (2-15 dias em 90d)
+   +1  RG_ALERT_PLAYER       — Media 10+ sessoes/dia (jogo responsavel)
+    0  ZERO_RISK_PLAYER      — Avg saque ~ avg deposito (neutro)
+
+TAGS NEGATIVAS (indicam risco):
+  -25  FAST_CASHOUT           — Deposito-saque em < 1 hora
+  -25  CASHOUT_AND_RUN        — Bonus > saque > inativo 48h
+  -15  PROMO_ONLY             — 80%+ depositos em dia de promo
+  -15  ROLLBACK_PLAYER        — Taxa rollback > 10%, min 5 rollbacks
+  -10  PROMO_CHAINER          — 3+ promos, 80% atividade so em promos
+  -10  BEHAV_RISK_PLAYER      — Saques 2-6 AM BRT ou valores anomalos
+  -10  MULTI_GAME_PLAYER      — 3+ sessoes simultaneas/hora, 10+ vezes
+   -5  POTENCIAL_ABUSER       — Conta com < 2 dias
+
+
+3. O QUE ESTA BOM
+================================================================================
+
+3.1 ARQUITETURA MODULAR E ESCALAVEL
+  - Cada tag e um SQL independente em scripts/sql/risk_matrix/. Adicionar ou
+    remover tags nao exige alterar o pipeline. Excelente design pattern.
+  - O pipeline (risk_matrix_pipeline.py) auto-descobre SQLs por nome de arquivo.
+  - Persistencia com snapshots historicos (DELETE por snapshot_date, nao TRUNCATE).
+  - Suporte a --dry-run, --only, --window_days. Facil de testar e debugar.
+
+3.2 QUALIDADE SQL
+  - Todas as 21 queries seguem padroes Athena/Trino corretos:
+    * CTE (WITH) em vez de temp tables
+    * Status correto: 'txn_confirmed_success' (cashier), 'co_success' (cashout),
+      'SUCCESS' (fund)
+    * Centavos /100.0 onde aplicavel
+    * Filtro test_user via ecr_ec2.tbl_ecr_flags
+    * Timezone BRT na BEHAV_RISK_PLAYER (AT TIME ZONE 'UTC' AT TIME ZONE...)
+  - Estrutura consistente: params > users > brand > logica > qualifying > output
+
+3.3 VISAO HOLISTICA DO JOGADOR
+  - A Matriz nao olha so fraude — classifica o jogador INTEIRO: desde VIP whale
+    ate abusador. Isso e valioso para CRM, retencao e compliance ao mesmo tempo.
+  - Tags positivas e negativas coexistem, permitindo nuance (ex: um jogador pode
+    ser REGULAR_DEPOSITOR +10 mas tambem FAST_CASHOUT -25).
+
+3.4 NORMALIZACAO E TIERS
+  - Formula clara e documentada: (bruto + 25) / 50 * 100
+  - Baseada em percentis empiricos (P05=-25, P95=+25), nao em valores arbitrarios.
+  - Tiers com acao sugerida (legenda obrigatoria). Boa pratica.
+
+3.5 LEGENDA COMPLETA
+  - Arquivo de legenda gerado automaticamente com cada execucao.
+  - Colunas, formulas, tiers, acoes, fontes — tudo documentado.
+
+
+4. O QUE ESTA FALTANDO OU PODE MELHORAR
+================================================================================
+
+4.1 SCORE FIXO POR TAG — SEM GRADACAO (CRITICO)
+  Problema: Cada tag e binaria (0 ou score fixo). Um jogador com 1 rollback
+  em 90 dias recebe o mesmo -15 que um jogador com 500 rollbacks.
+
+  Impacto: Perde-se a intensidade do sinal. Dois jogadores "Muito Ruim" podem
+  ter perfis completamente diferentes.
+
+  Sugestao: Implementar scores GRADUAIS em pelo menos as tags criticas:
+    - ROLLBACK_PLAYER: -5 (taxa 10-20%), -10 (20-40%), -15 (>40%)
+    - FAST_CASHOUT: -10 (1 ocorrencia), -25 (3+ ocorrencias)
+    - PROMO_ONLY: -5 (80-90%), -15 (>90%)
+    - VIP_WHALE_PLAYER: +15 (R$15-30k), +25 (R$30-50k), +30 (>R$50k)
+
+4.2 NAO FILTRA c_product_id CONSISTENTEMENTE
+  Problema: A maioria dos SQLs que acessa fund_ec2 NAO filtra por c_product_id.
+  So BEHAV_SLOTGAMER filtra 'CASINO'. As demais tags misturam casino + sportsbook
+  em bets/wins, o que pode distorcer GGR e rollbacks.
+
+  Impacto: Um jogador de sportsbook com alto volume pode aparecer como
+  VIP_WHALE_PLAYER ou ROLLBACK_PLAYER indevidamente.
+
+  Sugestao: Filtrar c_product_id = 'CASINO' onde a logica for especifica de casino,
+  ou criar tags separadas por vertical (VIP_WHALE_CASINO, VIP_WHALE_SB).
+
+4.3 SPORTSBOOK COMPLETAMENTE AUSENTE
+  Problema: Nenhuma tag cobre comportamento especifico de sportsbook.
+  Nosso agente de riscos ja tem R9 (Live Delay Exploitation) e R10
+  (Cancelamento/Refund SB) — 136 jogadores flagados em 7 dias.
+
+  Impacto: Jogadores que exploram live betting ou abusam de refunds
+  podem ter score "Muito Bom" na matriz por nao terem flags negativas
+  de casino. Gap grave de cobertura.
+
+  Sugestao: Adicionar ao menos:
+    - LIVE_DELAY_EXPLOITER (-20): WR >= 55% em live + lucro > R$200
+    - SB_REFUND_ABUSER (-15): 3+ refunds ou valor refundado > R$500
+    - SB_CASHOUT_WINNER (-5): saque alto sem deposito proporcional em SB
+
+4.4 FREESPIN ABUSE NAO COBERTO
+  Problema: Nosso R8 detectou 2 jogadores com ate -R$636k de revenue negativo
+  via free spins (caso Murilo/Fabiano, 06/04/2026). A Matriz nao tem tag
+  equivalente.
+
+  Impacto: Free spin abusers podem ter score positivo na Matriz se tiverem
+  depositos regulares e sessoes engajadas. O revenue negativo nao entra no
+  calculo.
+
+  Sugestao: Criar tag FREESPIN_ABUSER (-25):
+    - FS wins > R$500 no periodo
+    - Revenue (bets - wins) negativo
+    - Ratio bonus/deposito > 0.5 ou deposito = 0
+
+4.5 VELOCITY CHECK AUSENTE
+  Problema: Nosso R6 flagou 866 jogadores com 5+ depositos/saques em 1 hora
+  no FDS. Esse padrao de structuring (lavagem de dinheiro) nao e coberto.
+
+  Impacto: Jogadores com transacoes em alta velocidade passam despercebidos.
+  Velocity e um indicador classico de AML.
+
+  Sugestao: Criar tag VELOCITY_RISK (-15):
+    - 5+ transacoes (deposito OU saque) em janela de 1 hora
+
+4.6 NAO USA DADOS DE REGISTRO (DATA DE CRIACAO DA CONTA)
+  Problema: POTENCIAL_ABUSER usa "primeiro deposito" como proxy para data
+  de criacao da conta. Isso nao captura contas que registraram mas nunca
+  depositaram, ou que registraram e demoraram para depositar.
+
+  Impacto: Falsos positivos (jogador antigo que mudou de metodo de pagamento
+  pode ter "primeiro deposito" recente) e falsos negativos (conta criada ha
+  meses que so agora comecou a abusar).
+
+  Sugestao: Usar ecr_ec2.tbl_ecr.c_registration_time (se existir) ou
+  ps_bi.dim_user.created_at como data real de registro. Validar empiricamente.
+
+4.7 CASHOUT_AND_RUN — LOGICA DE INATIVIDADE FRAGIL
+  Problema: A tag verifica se "last_activity_date <= cashout_date + 2 dias".
+  Mas isso compara a ULTIMA atividade total com UMA data de cashout.
+  Se o jogador fez cashout_and_run em janeiro mas voltou em marco, a tag
+  NAO pega — porque a ultima atividade e em marco.
+
+  Impacto: Subdeteccao. Jogadores que fazem C&R repetidamente mas intercalam
+  com atividade "normal" escapam do filtro.
+
+  Sugestao: Mudar para: "para CADA par bonus-cashout, verificar se houve
+  atividade nos 2 dias seguintes ao cashout especifico", nao olhar so a
+  ultima atividade global.
+
+4.8 NORMALIZACAO PODE ACHATAR EXTREMOS
+  Problema: A formula limita o score a [0, 100] com P05=-25 e P95=+25.
+  Jogadores com score_bruto = -90 (pior teorico) e -25 ambos ficam em 0.
+  Jogadores com +50 e +166 ambos ficam em 100.
+
+  Impacto: Perde-se a diferenciacao no topo e na base da distribuicao,
+  justamente onde queremos mais granularidade para priorizar investigacoes.
+
+  Sugestao: Usar normalizacao logaritmica ou ampliar o range para P01/P99.
+  Alternativamente, manter score_bruto como metrica primaria de priorizacao
+  e score_norm apenas para visualizacao.
+
+4.9 RG_ALERT_PLAYER COM SCORE POSITIVO (+1)
+  Problema: Um jogador com 10+ sessoes/dia recebe score POSITIVO (+1).
+  Isso e contraditorio — jogo excessivo e um sinal de Responsible Gaming
+  que deveria, no minimo, ser neutro ou levemente negativo.
+
+  Impacto: Jogadores compulsivos sao incentivados no scoring.
+  Pode gerar problemas regulatorios (BETS regulamentadas no Brasil).
+
+  Sugestao: Mudar para 0 (neutro) ou -5 (alerta RG). Adicionar flag
+  de notificacao ao time de Responsible Gaming independente do score.
+
+4.10 ZERO_RISK_PLAYER NAO FILTRA VALORES MINIMOS
+  Problema: A tag qualifica quem tem avg_saque ~ avg_deposito (margem 30%).
+  Mas nao tem valor minimo. Um jogador que depositou R$1 e sacou R$1 qualifica.
+
+  Impacto: Ruido. Jogadores com atividade insignificante recebem tag neutra
+  quando na verdade sao inativos efetivos.
+
+  Sugestao: Adicionar minimo de 3 depositos e 3 saques, com valor total
+  minimo (ex: R$50 em cada lado).
+
+
+5. COMPARACAO COM O AGENTE DE RISCOS (R1-R10)
+================================================================================
+
+A Matriz de Risco e o Agente de Riscos sao COMPLEMENTARES, nao concorrentes.
+Servem propositos diferentes:
+
+  MATRIZ DE RISCO                   | AGENTE DE RISCOS (R1-R10)
+  --------------------------------- | ---------------------------------
+  Classifica TODOS os jogadores     | Flaga apenas SUSPEITOS
+  Score positivo + negativo         | So flags negativas (fraude)
+  Foco: CRM + retencao + risco     | Foco: antifraude + compliance
+  Binario (tem/nao tem tag)         | Gradual (evidencia + contexto)
+  Janela fixa 90 dias               | Janela configuravel (7/30/90d)
+  1 saida = CSV/PG                  | Deep dive + dashboard + top players
+  Nao tem sportsbook                | Tem R9 + R10 sportsbook
+  Nao tem freespin abuse            | Tem R8 freespin abuse
+  Nao tem velocity                  | Tem R6 velocity check
+  Nao tem pico de jogo              | Tem R1 pico anormal
+  Nao tem saque rapido pos-registro | Tem R7 saque < 24h pos-registro
+
+COBERTURA DE FRAUDE — Matriz vs Agente:
+
+  Regra Agente    | Equivalente Matriz          | Cobertura
+  --------------- | --------------------------- | -------------------
+  R1 Pico jogo    | (nenhum)                    | GAP NA MATRIZ
+  R2 Bonus abuse  | PROMO_ONLY + PROMO_CHAINER  | PARCIAL (sem P95)
+  R3a Zero dep    | (nenhum)                    | GAP NA MATRIZ
+  R3b Ratio 5x+  | (nenhum)                    | GAP NA MATRIZ
+  R4 Rollbacks    | ROLLBACK_PLAYER             | COBERTO (binario)
+  R5 Sessoes sim. | MULTI_GAME_PLAYER           | COBERTO (binario)
+  R6 Velocity     | (nenhum)                    | GAP NA MATRIZ
+  R7 Saque rapido | (nenhum)                    | GAP NA MATRIZ
+  R8 FS abuser    | (nenhum)                    | GAP NA MATRIZ
+  R9 Live delay   | (nenhum)                    | GAP NA MATRIZ
+  R10 Cancel SB   | (nenhum)                    | GAP NA MATRIZ
+
+  Resumo: 5 de 10 regras de fraude NAO tem equivalente na Matriz.
+  Isso e esperado — a Matriz nao foi desenhada como ferramenta antifraude.
+  Mas cria um ponto cego: jogadores podem ter score "Bom" na Matriz
+  enquanto sao flagados como HIGH no Agente.
+
+
+6. SUGESTOES DE INTEGRACAO
+================================================================================
+
+6.1 PROPOSTA: SCORE UNIFICADO
+  Combinar o score da Matriz (comportamental) com o score do Agente (fraude)
+  em um score unico que capture ambas as dimensoes.
+
+  Formula sugerida:
+    score_final = score_matriz_norm * 0.4 + (100 - risk_score_norm) * 0.6
+
+  Onde:
+    - score_matriz_norm = score atual da Matriz (0-100, quanto maior melhor)
+    - risk_score_norm = score do Agente normalizado (0-100, quanto maior pior)
+    - Peso 60% para fraude (prioridade do negocio) vs 40% comportamental
+
+  Output: Um unico score por jogador para tomada de decisao.
+
+6.2 PROPOSTA: ENRIQUECER A MATRIZ COM TAGS DO AGENTE
+  Adicionar 5 novas tags a Matriz baseadas nas regras do Agente:
+
+  Tag                    | Score | Origem
+  ---------------------- | ----- | -------
+  ZERO_DEPOSIT_CASHOUT   |  -30  | R3a
+  VELOCITY_RISK          |  -15  | R6
+  FAST_REGISTRATION_CASH |  -20  | R7
+  FREESPIN_ABUSER        |  -25  | R8
+  LIVE_DELAY_EXPLOITER   |  -20  | R9
+
+  Isso ampliaria o score negativo maximo de -90 para -200,
+  exigindo recalibrar a normalizacao (P05/P95).
+
+6.3 PROPOSTA: FLAG DE CONFLITO
+  Criar alerta automatico quando:
+    - Matriz diz "Muito Bom" MAS Agente flaga como HIGH/CRITICAL
+    - Matriz diz "Muito Ruim" MAS Agente nao flaga nada
+
+  Esses conflitos indicam que um dos sistemas precisa de calibracao.
+
+6.4 PROPOSTA: PIPELINE UNICO
+  Rodar ambos os sistemas no mesmo pipeline diario (EC2):
+    1. risk_fraud_detection.py --days 7   (Agente: flags de fraude)
+    2. risk_matrix_pipeline.py            (Matriz: score comportamental)
+    3. Script de merge: cruza por ecr_id, gera score_final
+    4. Dashboard HTML unificado
+
+
+7. ALERTAS E PROBLEMAS POTENCIAIS
+================================================================================
+
+7.1 FALSOS POSITIVOS PREVISTOS
+  - POTENCIAL_ABUSER: TODO jogador novo (< 2 dias) recebe -5, inclusive quem
+    acabou de se registrar e fez um deposito legitimo. Com a base crescendo,
+    isso vai gerar muito ruido.
+  - PROMO_CHAINER: Jogador casual que so joga nas sextas (dia de promo) pode
+    ser flagado como "grinder" quando na verdade e sazonal.
+  - MULTI_GAME_PLAYER: Jogadores que jogam slot + crash/aviator na mesma hora
+    (comportamento normal no mobile) podem ser flagados.
+
+7.2 FALSOS NEGATIVOS PREVISTOS
+  - Jogador que abusa de free spins mas deposita regularmente: tags positivas
+    (REGULAR_DEPOSITOR +10, SUSTAINED_PLAYER +15) compensam a ausencia de
+    tag de FS abuse, resultando em score "Bom".
+  - Jogador de sportsbook que explora live delay: sem nenhuma tag negativa
+    de sportsbook, recebe "SEM SCORE" ou score positivo se tiver depositos.
+
+7.3 REGRAS CONFLITANTES
+  - SUSTAINED_PLAYER (+15) vs CASHOUT_AND_RUN (-25): Um jogador pode receber
+    AMBAS se sacou apos bonus (C&R) mas tambem jogou apos outro saque.
+    O net seria -10, o que faz sentido, mas a interpretacao da tag fica confusa.
+  - ENGAGED_PLAYER (+10) vs RG_ALERT_PLAYER (+1): Sao mutuamente exclusivas
+    pela logica (3-10 vs 10+), o que e correto. Mas RG com score positivo
+    e um problema conceitual (ver 4.9).
+  - NON_BONUS_DEPOSITOR (+10) vs NON_PROMO_PLAYER (+10): Altamente
+    correlacionadas. Quem nao usa bonus tende a nao usar promo. Jogadores
+    organicos podem ganhar +20 "de graca" so por nao usar bonus.
+
+7.4 CUSTO ATHENA
+  - As 21 queries rodam contra fund_ec2, cashier_ec2 e bonus_ec2 com janela
+    de 90 dias cada. Estimativa: ~5-10 GB escaneados por execucao.
+  - Nao ha otimizacao de particao por data em todas as queries (algumas usam
+    CURRENT_TIMESTAMP - INTERVAL '90' DAY que pode nao ativar partition pruning).
+  - Sugestao: parametrizar datas como TIMESTAMP literals e consolidar queries
+    que acessam a mesma tabela em uma unica CTE compartilhada.
+
+
+8. VEREDICTO FINAL
+================================================================================
+
+  RECOMENDACAO: INTEGRAR COM AJUSTES
+
+  A Matriz de Risco e um trabalho solido e bem arquitetado. A arquitetura
+  modular (1 SQL por tag, auto-discovery, snapshots historicos) e superior
+  ao que temos no Agente em termos de extensibilidade.
+
+  Porem, como ferramenta de RISCO/ANTIFRAUDE, ela e INSUFICIENTE sozinha.
+  Faltam 5 das 10 regras de fraude do nosso Agente, nao cobre sportsbook,
+  e o scoring binario perde gradacao em casos criticos.
+
+  O melhor caminho e:
+  1. MANTER ambos os sistemas operando em paralelo
+  2. ENRIQUECER a Matriz com tags derivadas do Agente (ver 6.2)
+  3. CRIAR score unificado para o stakeholder (ver 6.1)
+  4. CORRIGIR os problemas criticos (4.1 scoring gradual, 4.3 sportsbook,
+     4.9 RG_ALERT score positivo, 4.7 C&R logica)
+  5. AUTOMATIZAR ambos no EC2 como pipeline diario
+
+  O que NAO fazer:
+  - NAO descartar a Matriz em favor do Agente (ou vice-versa)
+  - NAO usar a Matriz como ferramenta antifraude isolada
+  - NAO confiar no tier "Muito Bom" sem cruzar com o Agente de fraude
+
+
+9. PROXIMOS PASSOS SUGERIDOS
+================================================================================
+
+  PRIORIDADE   | ACAO                                    | RESPONSAVEL
+  ------------ | --------------------------------------- | -----------
+  P0 (urgente) | Corrigir RG_ALERT score (+1 -> 0 ou -5)| Mateus
+  P0 (urgente) | Validar CASHOUT_AND_RUN logica          | Mauro
+  P1 (alta)    | Adicionar 5 tags de fraude do Agente    | Mateus + Mauro
+  P1 (alta)    | Separar tags casino vs sportsbook       | Mauro
+  P2 (media)   | Implementar scoring gradual             | Mateus
+  P2 (media)   | Script de merge score unificado         | Mateus
+  P3 (baixa)   | Otimizar custo Athena (CTE compartilhada)| Gusta
+  P3 (baixa)   | Dashboard HTML unificado                | Mateus
+
+================================================================================
+Avaliacao concluida. Disponivel para discussao com o time.
+Agente de Riscos — Squad 3 Intelligence Engine
+================================================================================

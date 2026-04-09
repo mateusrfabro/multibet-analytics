@@ -1,0 +1,84 @@
+================================================================
+NOTA DE ENTREGA — Matriz de Risco (Migracao Athena)
+Data: 2026-04-06
+De: Mateus (Squad Intelligence Engine)
+Para: Mauro (validacao)
+================================================================
+
+RESUMO
+------
+- 21 SQLs corrigidos para Athena/Trino (removido Redshift/BigQuery)
+- 1 pipeline Python (risk_matrix_pipeline.py) — roda tudo automatizado
+- PLAYER_NOT_VALID: removido (conforme alinhamento)
+- 2 tags novas: MULTI_GAME_PLAYER e ROLLBACK_PLAYER
+- ENGAGED_AND_RG: separado em ENGAGED_PLAYER (+10) e RG_ALERT_PLAYER (+1)
+
+O QUE MUDOU NOS SQLs
+---------------------
+1. SCORES CORRIGIDOS (alinhados com a Matriz Notion):
+   - PROMO_ONLY: -20 → -15
+   - ZERO_RISK_PLAYER: 20 → 0 (neutro, agora compara avg saque ≈ avg deposito)
+   - FAST_CASHOUT: -15 → -25 (intervalo reduzido de 2h para 1h)
+   - SUSTAINED_PLAYER: 8 → +15 (agora checa se jogador saca E continua jogando)
+   - NON_BONUS_DEPOSITOR: 5 → +10
+   - REINVEST_PLAYER: 6 → +15 (janela ampliada para 7 dias pos-saque)
+   - VIP_WHALE_PLAYER: 15 → +30 (agora calcula GGR real > R$15k via fund_ec2)
+   - WINBACK_HI_VAL_PLAYER: 12 → +25 (agora com GGR entre R$8k-R$15k + reativacao)
+   - PLAYER_REENGAGED: 5 → +30
+   - POTENCIAL_ABUSER: -15 → -5 (usa primeiro deposito como proxy de idade da conta)
+   - SLEEPER_LOW_PLAYER: -5 → +5
+   - BEHAV_SLOTGAMER: 2 → +5
+
+2. LOGICA IMPLEMENTADA (9 SQLs que estavam placeholder):
+   - PROMO_CHAINER: 3+ dias bonus E 80% atividade so em promos
+   - NON_PROMO_PLAYER: ativo ultimos 7d sem bonus
+   - ENGAGED_PLAYER: media 3-10 sessoes/dia (c_session_id)
+   - RG_ALERT_PLAYER: media 10+ sessoes/dia
+   - BEHAV_RISK_PLAYER: saques 2-6 AM BRT ou valores com desvio > 2x media
+   - POTENCIAL_ABUSER: primeiro deposito < 2 dias
+   - PLAYER_REENGAGED: gap 30d+ inativo, voltou com 3+ dias ativos em 14d
+   - SLEEPER_LOW_PLAYER: < 15 dias ativos em 90d + tem bonus
+   - WINBACK_HI_VAL_PLAYER: reativado + GGR 8k-15k + 5+ dias ativos
+
+3. TAGS NOVAS (ja validadas na sintaxe):
+   - MULTI_GAME_PLAYER (-10): 3+ sessoes simultaneas na mesma hora, 10+ ocorrencias
+   - ROLLBACK_PLAYER (-15): taxa rollback > 10%, minimo 5 rollbacks
+
+COMO VALIDAR
+------------
+1. Abrir cada .sql no DBeaver conectado ao Athena
+2. Rodar com LIMIT 100 para checar sintaxe e resultados
+3. Conferir se os scores batem com a Matriz Notion
+4. Validar que test_user = false esta em todas as queries
+5. Rodar o pipeline: python scripts/risk_matrix_pipeline.py --dry-run
+   (gera CSV sem gravar no DB)
+
+PONTOS DE ATENCAO
+-----------------
+- ZERO_RISK_PLAYER: logica nova (avg saque ≈ avg deposito, margem 30%)
+  Se preferir outra logica, me avise.
+- POTENCIAL_ABUSER: usa primeiro deposito como proxy de data da conta
+  (nao encontrei coluna de registration_date direta no ecr_ec2).
+- VIP_WHALE_PLAYER e WINBACK_HI_VAL_PLAYER: calculam GGR via fund_ec2
+  (bets - wins, em centavos /100). Confirmar se a formula de GGR esta OK.
+- BEHAV_SLOTGAMER: filtra c_product_id = 'CASINO' para identificar slots.
+  Se precisar granularidade por tipo de jogo, ajustar.
+
+FORMULA DE NORMALIZACAO (Score 0-100)
+--------------------------------------
+score_norm = (score_bruto + 25) / 50 * 100, limitado [0, 100]
+
+Tiers:
+  > 75  = Muito Bom
+  51-75 = Bom
+  26-50 = Mediano
+  11-25 = Ruim
+  <= 10 = Muito Ruim
+
+FONTE DOS DADOS
+---------------
+Banco: AWS Athena (Iceberg Data Lake, sa-east-1)
+Databases: ecr_ec2, fund_ec2, cashier_ec2, bonus_ec2, ps_bi
+Janela: ultimos 90 dias
+Filtros: test_user = false, c_partner_id IS NOT NULL
+================================================================

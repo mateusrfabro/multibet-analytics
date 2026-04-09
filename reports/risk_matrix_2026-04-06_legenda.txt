@@ -1,0 +1,74 @@
+======================================================================
+LEGENDA — Matriz de Risco MultiBet
+Data: 2026-04-06
+Gerado: 2026-04-06 12:25:51
+======================================================================
+
+COLUNAS DE IDENTIFICACAO
+----------------------------------------
+label_id        : ID do label/marca (c_partner_id do ECR)
+user_id          : ID interno do jogador (c_ecr_id, 18 digitos)
+user_ext_id      : ID externo Smartico (para cross-referencia CRM)
+snapshot_date    : Data do snapshot
+
+COLUNAS DE TAGS (0 = nao aplicavel, valor = score da tag)
+----------------------------------------
+  regular_depositor             : +10 | Depositos regulares >=3/mes
+  promo_only                    : -15 | So deposita durante promocoes (>=80%)
+  zero_risk_player              :   0 | Avg saque ≈ avg deposito (neutro)
+  fast_cashout                  : -25 | Deposito-saque em < 1h (abuso)
+  sustained_player              : +15 | Saca e continua jogando
+  non_bonus_depositor           : +10 | Deposita sem usar bonus
+  promo_chainer                 : -10 | 3+ promos consecutivas sem jogo organico
+  cashout_and_run               : -25 | Bonus > saque > inativo 48h
+  reinvest_player               : +15 | Saca e reinveste (deposita de novo)
+  non_promo_player              : +10 | Ativo ha 7d sem usar promo
+  engaged_player                : +10 | 3-10 sessoes/dia (engajado)
+  rg_alert_player               :  +1 | 10+ sessoes/dia (alerta jogo responsavel)
+  behav_risk_player             : -10 | Saques em horarios extremos + valores anomalos
+  potencial_abuser              :  -5 | Conta com < 2 dias (muito nova)
+  player_reengaged              : +30 | Reativado apos 30d inativo, engajado
+  sleeper_low_player            :  +5 | So ativo em eventos sazonais
+  vip_whale_player              : +30 | GGR > R$15k + alta frequencia
+  winback_hi_val_player         : +25 | Reativado, R$8k < GGR < R$15k
+  behav_slotgamer               :  +5 | Focado em slots + tem deposito
+  multi_game_player             : -10 | Sessoes simultaneas (possivel bot)
+  rollback_player               : -15 | Taxa rollback > 10% (exploit tecnico)
+
+COLUNAS DE SCORE
+----------------------------------------
+score_bruto     : Soma de todos os scores das tags ativas
+score_norm      : Score normalizado 0-100 (formula: (bruto+25)/50*100)
+tier            : Classificacao baseada no score_norm
+
+TIERS
+----------------------------------------
+  Score > 75  -> Muito Bom  (jogador legitimo, alto engajamento)
+  51 - 75     -> Bom        (jogador ativo, deposita sem bonus)
+  26 - 50     -> Mediano    (mistura de comportamentos)
+  11 - 25     -> Ruim       (dependente de promos, risco medio)
+  <= 10       -> Muito Ruim (multiplas flags criticas, investigar)
+
+FORMULA DE NORMALIZACAO
+----------------------------------------
+  score_norm = (score_bruto + 25) / 50 * 100, limitado [0, 100]
+  Onde: -25 = p05 empirico, +25 = p95 empirico
+  Pior caso teorico: -90 | Melhor caso: +166
+
+FONTE DE DADOS
+----------------------------------------
+  Banco: AWS Athena (Iceberg Data Lake, sa-east-1)
+  Databases: ecr_ec2, fund_ec2, cashier_ec2, bonus_ec2, ps_bi
+  Janela: ultimos 90 dias
+  Filtros: test_user = false, c_partner_id IS NOT NULL
+  Timestamps: UTC (converter para BRT em dashboards)
+
+ACAO SUGERIDA POR TIER
+----------------------------------------
+  Muito Bom  : Monitoramento, considerar pipeline VIP
+  Bom        : Manter elegibilidade a promocoes
+  Mediano    : Monitoramento passivo, reengajamento opcional
+  Ruim       : Restringir bonus, monitorar atividade
+  Muito Ruim : Bloqueio temporario, investigacao completa
+
+======================================================================
