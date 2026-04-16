@@ -5,9 +5,15 @@
 # Credenciais — NUNCA subir pro Git
 .env
 *.env.*
+ec2_deploy/.env
 *credentials*.json
 *service_account*.json
 dwh-ext-24105.json
+*.pem
+*.key
+!*.pub.key
+bastion-*.pem
+etl-*.pem
 
 # Python
 __pycache__/
@@ -92,3 +98,27 @@ Thumbs.db
 google ads/*.json
 data/
 alerta-ftd/
+
+# Arquivo (pastas obsoletas preservadas localmente)
+_archive/
+
+# Backups automaticos (git ja eh sistema de versionamento)
+*.bak
+*.bak_*
+*.bkp
+*.bkp_*
+
+# Clones de outros repos (nunca commitar)
+_clones/
+_workdir_migration/
+
+# Fragmentos adicionais de terminal (heredocs/quotes escapados)
+/[{}()\[\]'\`$]*
+/[A-Z][A-Z][A-Z]
+/R$*
+/{*
+/(*
+/{[,.:]
+/d.*
+/c_*
+/u_*
