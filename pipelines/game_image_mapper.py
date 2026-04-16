@@ -84,17 +84,32 @@ WHERE c_status = 'active'
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
+# Overrides manuais de game_slug — casos em que a URL de gameplay no front
+# NAO segue o padrao lowercase/underscore do slugify().
+# Chave: game_name_upper (UPPER TRIM) | Valor: game_slug literal a gravar.
+SLUG_OVERRIDES = {
+    "FORTUNE SNAKE": "/pb/gameplay/Fortune_Snake/real-game",
+}
+
+
 def slugify(name: str) -> str:
     """Converte nome do jogo em slug de URL.
-    Ex: 'Fortune Ox' → 'fortune-ox'
+    Ex: 'Fortune Ox' → 'fortune_ox'
     """
     name = unicodedata.normalize("NFKD", name)
     name = name.encode("ascii", "ignore").decode("ascii")
     name = name.lower().strip()
     name = re.sub(r"[^\w\s-]", "", name)
-    name = re.sub(r"[\s_]+", "-", name)
-    name = re.sub(r"-+", "-", name)
+    name = re.sub(r"[\s-]+", "_", name)
+    name = re.sub(r"_+", "_", name)
     return name
+
+
+def build_game_slug(game_name: str, name_upper: str) -> str:
+    """Retorna slug final — aplica override manual antes do slugify padrao."""
+    if name_upper in SLUG_OVERRIDES:
+        return SLUG_OVERRIDES[name_upper]
+    return f"/pb/gameplay/{slugify(game_name)}/real-game"
 
 
 def load_csv(path: str) -> list[dict]:
@@ -213,7 +228,7 @@ def refresh():
         game_image_url = csv_entry.get("url")
         vendor_id = athena_entry.get("vendor_id")
         provider_game_id = athena_entry.get("provider_game_id")
-        game_slug = f"/pb/gameplay/{slugify(game_name)}/real-game"
+        game_slug = build_game_slug(game_name, name_upper)
 
         # Determina a fonte
         if csv_entry and athena_entry:
