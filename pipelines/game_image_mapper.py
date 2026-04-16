@@ -89,6 +89,10 @@ WHERE c_status = 'active'
 # Chave: game_name_upper (UPPER TRIM) | Valor: game_slug literal a gravar.
 SLUG_OVERRIDES = {
     "FORTUNE SNAKE": "/pb/gameplay/Fortune_Snake/real-game",
+    # Jogos "+" — slugify() remove o "+" por ser char especial.
+    # Padrao no front multi.bet.br: <nome>_plus (validado 16/04/2026).
+    "CHICKEN+":      "/pb/gameplay/chicken_plus/real-game",
+    "MINES+":        "/pb/gameplay/mines_plus/real-game",
 }
 
 
