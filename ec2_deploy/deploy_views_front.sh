@@ -40,21 +40,21 @@ echo "[2/6] Backup do pipeline antigo..."
     cp pipelines/game_image_mapper.py "pipelines/game_image_mapper.py.bkp_$(date +%Y%m%d_%H%M%S)" && \
     echo "  OK: backup criado"
 
-# 3. Aplicar DDL v2 (ALTER TABLE — idempotente)
-echo "[3/6] Aplicando DDL v2 (ALTER TABLE game_image_mapping)..."
+# 3. Aplicar DDLs v2 + v3 (ALTER TABLE — idempotente)
+echo "[3/6] Aplicando DDLs v2 + v3 (ALTER TABLE + view vw_front_api_games)..."
 source venv/bin/activate
 python3 << 'PYEOF'
 import sys
 sys.path.insert(0, '/home/ec2-user/multibet')
 from db.supernova import get_supernova_connection
-with open('/home/ec2-user/multibet/sql/ddl_game_image_mapping_v2.sql') as f:
-    sql = f.read()
 ssh, conn = get_supernova_connection()
 try:
     with conn.cursor() as cur:
-        cur.execute(sql)
+        for ddl_file in ['ddl_game_image_mapping_v2.sql', 'ddl_game_image_mapping_v3.sql']:
+            with open(f'/home/ec2-user/multibet/sql/{ddl_file}') as f:
+                cur.execute(f.read())
+            print(f"  OK: {ddl_file}")
     conn.commit()
-    print("  OK: ALTER TABLE aplicado")
 finally:
     conn.close(); ssh.close()
 PYEOF
@@ -84,7 +84,7 @@ finally:
 
 # Smoke test rapido
 for vw in ["vw_front_top_24h", "vw_front_live_casino", "vw_front_by_vendor",
-           "vw_front_by_category", "vw_front_jackpot"]:
+           "vw_front_by_category", "vw_front_jackpot", "vw_front_api_games"]:
     r = execute_supernova(f"SELECT COUNT(*) FROM multibet.{vw}", fetch=True)
     print(f"  {vw:<28} {r[0][0]} linhas")
 PYEOF

@@ -135,7 +135,9 @@ WITH base_24h AS (
     SELECT
         UPPER(TRIM(game_name)) AS game_name_upper,
         SUM(total_bets)        AS rounds_24h,
-        SUM(unique_players)    AS players_24h
+        SUM(unique_players)    AS players_24h,
+        SUM(total_bet)         AS total_bet_24h,
+        SUM(total_win)         AS total_wins_24h
     FROM multibet.silver_game_15min
     WHERE janela_fim >= (NOW() AT TIME ZONE 'UTC') - INTERVAL '24 hours'
       AND total_bets > 0
@@ -148,10 +150,13 @@ ranked AS (
         game_name_upper,
         rounds_24h,
         players_24h,
+        total_bet_24h,
+        total_wins_24h,
         ROW_NUMBER() OVER (ORDER BY rounds_24h DESC) AS popularity_rank_24h
     FROM base_24h
 )
-SELECT game_name_upper, rounds_24h, players_24h, popularity_rank_24h
+SELECT game_name_upper, rounds_24h, players_24h,
+       total_bet_24h, total_wins_24h, popularity_rank_24h
 FROM ranked
 """
 
@@ -326,10 +331,13 @@ def refresh():
     try:
         rank_rows = execute_supernova(QUERY_PG_RANK_24H, fetch=True)
         log.info(f"{len(rank_rows)} jogos com atividade nas ultimas 24h.")
-        for game_name_upper, rounds_24h, players_24h, rank in rank_rows:
+        for row in rank_rows:
+            game_name_upper, rounds_24h, players_24h, total_bet, total_wins, rank = row
             rank_map[game_name_upper] = {
-                "rounds_24h": int(rounds_24h or 0),
-                "players_24h": int(players_24h or 0),
+                "rounds_24h":         int(rounds_24h or 0),
+                "players_24h":        int(players_24h or 0),
+                "total_bet_24h":      float(total_bet or 0),
+                "total_wins_24h":     float(total_wins or 0),
                 "popularity_rank_24h": int(rank),
             }
     except Exception as e:
@@ -374,6 +382,8 @@ def refresh():
         # Popularity (24h rolantes)
         rounds_24h          = rank_entry.get("rounds_24h", 0)
         players_24h         = rank_entry.get("players_24h", 0)
+        total_bet_24h       = rank_entry.get("total_bet_24h", 0.0)
+        total_wins_24h      = rank_entry.get("total_wins_24h", 0.0)
         popularity_rank_24h = rank_entry.get("popularity_rank_24h")  # NULL se sem atividade
 
         records.append((
@@ -382,6 +392,7 @@ def refresh():
             product_id, sub_vendor_id, game_category, game_category_desc,
             game_type_desc, live_subtype, has_jackpot, is_active,
             rounds_24h, players_24h, popularity_rank_24h, now_utc,
+            total_bet_24h, total_wins_24h,
         ))
 
     # ─── 5. Upsert no Super Nova DB ──────────────────────────────────────────
@@ -392,8 +403,9 @@ def refresh():
              game_image_url, game_slug, source, updated_at,
              product_id, sub_vendor_id, game_category, game_category_desc,
              game_type_desc, live_subtype, has_jackpot, is_active,
-             rounds_24h, players_24h, popularity_rank_24h, popularity_window_end)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s, %s,%s,%s,%s, %s,%s,%s,%s, %s,%s,%s,%s)
+             rounds_24h, players_24h, popularity_rank_24h, popularity_window_end,
+             total_bet_24h, total_wins_24h)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s, %s,%s,%s,%s, %s,%s,%s,%s, %s,%s,%s,%s, %s,%s)
         ON CONFLICT (game_name_upper) DO UPDATE SET
             game_name             = EXCLUDED.game_name,
             provider_game_id      = COALESCE(EXCLUDED.provider_game_id, multibet.game_image_mapping.provider_game_id),
@@ -410,11 +422,13 @@ def refresh():
             live_subtype          = COALESCE(EXCLUDED.live_subtype, multibet.game_image_mapping.live_subtype),
             has_jackpot           = COALESCE(EXCLUDED.has_jackpot, multibet.game_image_mapping.has_jackpot),
             is_active             = COALESCE(EXCLUDED.is_active, multibet.game_image_mapping.is_active),
-            -- Rank/rounds: SEMPRE atualiza (valor "fresco" da janela 24h atual).
+            -- Rank/valores 24h: SEMPRE atualiza (valor "fresco" da janela 24h atual).
             -- Se EXCLUDED.popularity_rank_24h for NULL = jogo nao teve atividade nas ultimas 24h,
-            -- intencionalmente zeramos rounds/players e limpamos rank.
+            -- intencionalmente zeramos metricas e limpamos rank.
             rounds_24h            = EXCLUDED.rounds_24h,
             players_24h           = EXCLUDED.players_24h,
+            total_bet_24h         = EXCLUDED.total_bet_24h,
+            total_wins_24h        = EXCLUDED.total_wins_24h,
             popularity_rank_24h   = EXCLUDED.popularity_rank_24h,
             popularity_window_end = EXCLUDED.popularity_window_end
     """
@@ -437,6 +451,9 @@ def refresh():
     jackpot_count = sum(1 for r in records if r[14])
     active_count  = sum(1 for r in records if r[15] is True)
 
+    total_bet_sum  = sum(float(r[20] or 0) for r in records)
+    total_wins_sum = sum(float(r[21] or 0) for r in records)
+
     log.info(f"Upsert concluido: {len(records)} jogos processados.")
     log.info(f"  Com imagem:        {with_img}  | Sem imagem: {without_img}")
     log.info(f"  Categoria slots:   {slot_count}")
@@ -444,6 +461,8 @@ def refresh():
     log.info(f"  Com jackpot:       {jackpot_count}")
     log.info(f"  Status active:     {active_count}")
     log.info(f"  Com rank 24h:      {with_rank} (jogos com atividade nas ultimas 24h)")
+    log.info(f"  Turnover 24h:      R$ {total_bet_sum:>15,.2f}")
+    log.info(f"  Wins 24h:          R$ {total_wins_sum:>15,.2f}")
     log.info(f"  Janela 24h ate:    {now_utc.isoformat()} UTC")
 
     if without_img > 0:
