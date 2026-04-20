@@ -24,22 +24,28 @@ brand AS (
   GROUP BY c_partner_id
 ),
 
--- Dias de uso de bonus
+-- FIX auditoria 20/04/2026 (critico #2 / BO4):
+--   Antes comparava DATEs (UTC truncado) via BETWEEN, o que gerava drift
+--   de +/-1 dia na virada de dia BRT e permitia casar cashout ANTES do
+--   bonus se ambos cairam no mesmo dia calendario. Agora compara
+--   TIMESTAMPS crus com janela de 24h apos o bonus.
+
+-- Uso de bonus (timestamp cru pra comparacao precisa)
 bonus_usage AS (
   SELECT DISTINCT
     b.c_ecr_id AS user_id,
-    CAST(b.c_created_time AS DATE) AS bonus_date
+    b.c_created_time AS bonus_ts
   FROM bonus_ec2.tbl_bonus_pocket_txn b
   WHERE b.c_created_time >= (SELECT start_ts FROM params)
     AND b.c_created_time <  (SELECT end_ts FROM params)
     AND b.c_bonus_txn_status = 'SUCCESS'
 ),
 
--- Saques
+-- Saques (timestamp cru)
 cashouts AS (
   SELECT
     c.c_ecr_id AS user_id,
-    CAST(c.c_created_time AS DATE) AS cashout_date
+    c.c_created_time AS cashout_ts
   FROM cashier_ec2.tbl_cashier_cashout c
   WHERE c.c_created_time >= (SELECT start_ts FROM params)
     AND c.c_created_time <  (SELECT end_ts FROM params)
@@ -47,11 +53,11 @@ cashouts AS (
     AND c.c_paid_amount > 0
 ),
 
--- Ultima atividade por jogador
+-- Ultima atividade por jogador (timestamp cru)
 recent_activity AS (
   SELECT
     t.c_ecr_id AS user_id,
-    MAX(CAST(t.c_start_time AS DATE)) AS last_activity_date
+    MAX(t.c_start_time) AS last_activity_ts
   FROM fund_ec2.tbl_real_fund_txn t
   WHERE t.c_start_time >= (SELECT start_ts FROM params)
     AND t.c_start_time <  (SELECT end_ts FROM params)
@@ -59,16 +65,17 @@ recent_activity AS (
   GROUP BY t.c_ecr_id
 ),
 
--- Padrao: bonus -> saque em ate 1 dia -> sem atividade em 2 dias
+-- Padrao: bonus -> saque em ate 24h -> sem atividade por 48h
 qualifying AS (
   SELECT DISTINCT bu.user_id
   FROM bonus_usage bu
   JOIN cashouts co
     ON bu.user_id = co.user_id
-   AND co.cashout_date BETWEEN bu.bonus_date AND bu.bonus_date + INTERVAL '1' DAY
+   AND co.cashout_ts >  bu.bonus_ts
+   AND co.cashout_ts <= bu.bonus_ts + INTERVAL '24' HOUR
   JOIN recent_activity ra
     ON bu.user_id = ra.user_id
-  WHERE ra.last_activity_date <= co.cashout_date + INTERVAL '2' DAY
+  WHERE ra.last_activity_ts <= co.cashout_ts + INTERVAL '48' HOUR
 )
 
 SELECT

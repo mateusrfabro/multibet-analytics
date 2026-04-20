@@ -23,22 +23,16 @@ brand AS (
   GROUP BY c_partner_id
 ),
 
--- Primeiro deposito de cada jogador como proxy de data de criacao da conta
-first_deposit AS (
-  SELECT
-    d.c_ecr_id AS user_id,
-    MIN(d.c_created_time) AS first_deposit_time
-  FROM cashier_ec2.tbl_cashier_deposit d
-  WHERE d.c_txn_status = 'txn_confirmed_success'
-    AND d.c_initial_amount > 0
-  GROUP BY d.c_ecr_id
-),
-
--- Qualifica: primeiro deposito nos ultimos 2 dias
+-- FIX auditoria 20/04/2026 (critico #3): trocado proxy first_deposit pela data
+-- real de signup (ecr_ec2.tbl_ecr.c_created_time). 2 ganhos:
+--   1. Semantica correta: conta criada !== primeiro deposito (podem diferir por dias).
+--   2. Custo: antes escaneava TODO cashier_deposit historico (sem filtro temporal
+--      na CTE) so pra filtrar ultimos 2 dias no qualifying. Agora query enxuta.
 qualifying AS (
-  SELECT user_id
-  FROM first_deposit
-  WHERE first_deposit_time >= CURRENT_TIMESTAMP - INTERVAL '2' DAY
+  SELECT u.c_ecr_id AS user_id
+  FROM ecr_ec2.tbl_ecr u
+  WHERE u.c_created_time >= CURRENT_TIMESTAMP - INTERVAL '2' DAY
+    AND u.c_partner_id IS NOT NULL
 )
 
 SELECT

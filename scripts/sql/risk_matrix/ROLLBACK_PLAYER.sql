@@ -24,6 +24,9 @@ brand AS (
 ),
 
 -- Rollbacks por jogador
+-- FIX auditoria 20/04/2026 (P5): adicionado c_txn_status='SUCCESS'.
+-- Antes contava rollbacks falhos/abortados, inflando o numerador enquanto
+-- regular_bets (abaixo) ja filtrava SUCCESS. Gerava false-positive sistematico.
 rollback_transactions AS (
   SELECT
     t.c_ecr_id AS user_id,
@@ -33,6 +36,7 @@ rollback_transactions AS (
   WHERE t.c_start_time >= (SELECT start_ts FROM params)
     AND t.c_start_time <  (SELECT end_ts FROM params)
     AND t.c_txn_type IN (72, 76, 61, 63, 91, 113) -- tipos de rollback
+    AND t.c_txn_status = 'SUCCESS'
   GROUP BY t.c_ecr_id
 ),
 

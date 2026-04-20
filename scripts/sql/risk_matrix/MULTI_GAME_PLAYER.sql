@@ -24,11 +24,15 @@ brand AS (
 ),
 
 -- Sessoes concorrentes: agrupa por user + dia + hora
+-- FIX auditoria 20/04/2026 (P4): hora agora em BRT, nao UTC (conformidade CLAUDE.md).
+-- Antes usava EXTRACT(HOUR FROM c_start_time) direto = hora UTC.
+-- Impacto pratico pequeno (regra e sobre sessoes simultaneas, invariante por TZ),
+-- mas BEHAV_RISK_PLAYER ja usa BRT -> consistencia entre SQLs do mesmo projeto.
 concurrent_sessions AS (
   SELECT
     t.c_ecr_id AS user_id,
-    CAST(t.c_start_time AS DATE) AS game_date,
-    EXTRACT(HOUR FROM t.c_start_time) AS game_hour,
+    CAST(t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE) AS game_date,
+    EXTRACT(HOUR FROM t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo') AS game_hour,
     COUNT(DISTINCT t.c_session_id) AS concurrent_games
   FROM fund_ec2.tbl_real_fund_txn t
   WHERE t.c_start_time >= (SELECT start_ts FROM params)
@@ -36,7 +40,9 @@ concurrent_sessions AS (
     AND t.c_txn_type IN (27, 28, 41, 43, 59, 127)  -- apostas
     AND t.c_session_id IS NOT NULL
     AND t.c_txn_status = 'SUCCESS'
-  GROUP BY t.c_ecr_id, CAST(t.c_start_time AS DATE), EXTRACT(HOUR FROM t.c_start_time)
+  GROUP BY t.c_ecr_id,
+           CAST(t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE),
+           EXTRACT(HOUR FROM t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
   HAVING COUNT(DISTINCT t.c_session_id) >= 3  -- 3+ sessoes na mesma hora (Notion spec)
 ),
 

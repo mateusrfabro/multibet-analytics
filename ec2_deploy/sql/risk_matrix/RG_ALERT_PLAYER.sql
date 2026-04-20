@@ -37,20 +37,27 @@ daily_sessions AS (
   GROUP BY t.c_ecr_id, CAST(t.c_start_time AS DATE)
 ),
 
--- Media de sessoes por dia
+-- FIX auditoria 20/04/2026 (critico #1 regulatorio):
+--   Antes usava AVG(sessions_count), que em distribuicao skewed pega
+--   jogador esporadico com 1 spike isolado (ex: 1 dia de 80 sessoes).
+--   Isso gera false-positive em flag de Jogo Responsavel (compliance).
+--   Agora usa mediana (APPROX_PERCENTILE 0.5) + minimo de 5 dias ativos
+--   para capturar padrao sustentado, nao evento isolado.
 avg_sessions AS (
   SELECT
     user_id,
-    AVG(CAST(sessions_count AS DOUBLE)) AS avg_daily_sessions
+    APPROX_PERCENTILE(CAST(sessions_count AS DOUBLE), 0.5) AS median_daily_sessions,
+    COUNT(*) AS active_days
   FROM daily_sessions
   GROUP BY user_id
 ),
 
--- Qualifica: media 10+ sessoes/dia
+-- Qualifica: mediana 10+ sessoes/dia SUSTENTADA por 5+ dias ativos
 qualifying AS (
   SELECT user_id
   FROM avg_sessions
-  WHERE avg_daily_sessions > 10.0
+  WHERE median_daily_sessions > 10.0
+    AND active_days >= 5
 )
 
 SELECT
