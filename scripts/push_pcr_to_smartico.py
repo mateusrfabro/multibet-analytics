@@ -79,15 +79,34 @@ log = logging.getLogger("push_pcr")
 # ---------------------------------------------------------------------------
 
 RATING_TO_SMARTICO: Dict[str, str] = {
-    "S": "PCR_RATING_S",
-    "A": "PCR_RATING_A",
-    "B": "PCR_RATING_B",
-    "C": "PCR_RATING_C",
-    "D": "PCR_RATING_D",
-    "E": "PCR_RATING_E",
+    "S":   "PCR_RATING_S",
+    "A":   "PCR_RATING_A",
+    "B":   "PCR_RATING_B",
+    "C":   "PCR_RATING_C",
+    "D":   "PCR_RATING_D",
+    "E":   "PCR_RATING_E",
+    "NEW": "PCR_RATING_NEW",  # v1.3 (20/04/2026) — novatos fora do ranking PVS
 }
 
 TAG_PREFIX_PATTERN = "PCR_RATING_*"  # usado no ^core_external_markers
+
+# ---------------------------------------------------------------------------
+# Shadow mode do rating NEW (v1.3, 20/04/2026)
+# ---------------------------------------------------------------------------
+# Enquanto Raphael (CRM) + Castrin (Head) nao aprovarem a tag PCR_RATING_NEW no
+# Smartico + jornada de boas-vindas associada, o pipeline GRAVA o rating NEW
+# na tabela (pra analise) mas NAO envia push pra Smartico (shadow mode).
+#
+# Pra ativar apos aprovacao:
+#   1. Confirmar com Raphael que a tag PCR_RATING_NEW existe no tenant Smartico
+#      (provisionamento via ticket JIRA no suporte deles, se necessario).
+#   2. Confirmar que a jornada de boas-vindas esta configurada e testada.
+#   3. Trocar PUSH_NEW_TAG_ENABLED = False para True.
+#   4. Rodar 1 canary manual + 1 amostra de 10 antes de full push (seguir
+#      memory/feedback_smartico_push_rollout_playbook.md).
+#
+# Ver docs/proposta_pcr_rating_new_20260420.md pra contexto completo.
+PUSH_NEW_TAG_ENABLED = False
 
 
 # ---------------------------------------------------------------------------
@@ -108,7 +127,13 @@ class PlayerPcr:
 
 
 def _query_snapshot(cursor, snapshot_date) -> pd.DataFrame:
-    sql = """
+    # v1.3 (20/04/2026): rating IN lista controlada por flag PUSH_NEW_TAG_ENABLED.
+    # Shadow mode (padrao): NEW fica na tabela mas NAO e pushado pro Smartico.
+    ratings_ativos = ["S", "A", "B", "C", "D", "E"]
+    if PUSH_NEW_TAG_ENABLED:
+        ratings_ativos.append("NEW")
+    placeholders = ", ".join(["%s"] * len(ratings_ativos))
+    sql = f"""
         SELECT
             player_id,
             external_id AS user_ext_id,
@@ -117,9 +142,9 @@ def _query_snapshot(cursor, snapshot_date) -> pd.DataFrame:
         FROM multibet.pcr_ratings
         WHERE snapshot_date = %s
           AND external_id IS NOT NULL
-          AND rating IN ('S', 'A', 'B', 'C', 'D', 'E')
+          AND rating IN ({placeholders})
     """
-    cursor.execute(sql, (snapshot_date,))
+    cursor.execute(sql, (snapshot_date, *ratings_ativos))
     cols = [d[0] for d in cursor.description]
     rows = cursor.fetchall()
     df = pd.DataFrame(rows, columns=cols)

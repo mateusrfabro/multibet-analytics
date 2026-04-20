@@ -76,39 +76,80 @@ Detalhes do checklist: [memory/feedback_sql_review_checklist_gusta.md](../memory
 
 ## 4. Pendentes e decisoes
 
-### 4.1 Pendente — PCR_RATING_NEW para novatos
+### 4.1 EM SHADOW MODE — PCR_RATING_NEW para novatos
 
-**Status:** proposta tecnica pronta, aguardando reuniao 15 min com Raphael (CRM) + Castrin (Head).
+**Status:** codigo implementado em shadow mode, aguardando aprovacao CRM pra ativar push.
 
 **Documento:** [proposta_pcr_rating_new_20260420.md](proposta_pcr_rating_new_20260420.md)
 
-**Resumo:** FTD recente (com < 14 dias de atividade OU < 3 depositos) cai
-automaticamente em rating E por instabilidade estatistica da formula PVS.
-Solucao: criar bucket separado `PCR_RATING_NEW` com jornada de boas-vindas
-no Smartico. Nao mexi no codigo sem aprovacao porque muda o contrato com
-o CRM.
+**O que foi implementado (20/04/2026 pos-decisao "podemos criar"):**
+- `pipelines/pcr_pipeline.py` (v1.3):
+  - Constantes `NOVATO_DAYS_THRESHOLD = 14` e `NOVATO_DEPOSITS_THRESHOLD = 3`
+  - `atribuir_rating()` separa novatos ANTES de calcular percentis do PVS
+    (maduros nao ficam distorcidos pela cauda estatistica dos novos)
+  - Rating NEW e atribuido a jogadores com `days_active < 14 OU num_deposits < 3`
+  - DDL alterado de `VARCHAR(2)` pra `VARCHAR(10)` com ALTER idempotente
+  - View `pcr_resumo` inclui NEW no `ORDER BY` (posicao 7, apos E)
+- `scripts/push_pcr_to_smartico.py`:
+  - Mapping `"NEW": "PCR_RATING_NEW"` adicionado
+  - Flag `PUSH_NEW_TAG_ENABLED = False` (shadow mode)
+  - `_query_snapshot` filtra NEW do push enquanto flag estiver off
+- Tabela recebe rating NEW normalmente (disponivel pra analise local),
+  mas o push Smartico **NAO envia** NEW enquanto a flag nao for ativada
 
-### 4.2 Mantido como esta — score_norm no diff do push Smartico
+**Para ativar push (apos aprovacao):**
+1. Confirmar com Raphael que tag `PCR_RATING_NEW` existe no tenant Smartico
+   (provisionamento via ticket JIRA se nao existir — ver 4.2 abaixo)
+2. Confirmar jornada de boas-vindas configurada + testada
+3. Trocar `PUSH_NEW_TAG_ENABLED = False` para `True` em push_pcr_to_smartico.py
+4. Rollout 3 fases: canary 1 user -> amostra 10 -> full
+   (seguir `memory/feedback_smartico_push_rollout_playbook.md`)
 
-**Decisao:** deixar como esta ate confirmar com Raphael.
+### 4.2 EM VALIDACAO — score_norm no Smartico (pesquisa tecnica concluida)
 
-**Por que levantei:** hoje o push pra Smartico envia update quando o
-conjunto de tags muda (`set(tags) != set(prev_tags)`). Se `score_norm`
-vai de 47 pra 49 (ambos dentro da mesma tag `RISK_TIER_MEDIANO`), o push
-NAO e enviado. Isso esta **correto** se o Smartico so consome as tags.
-Se o Smartico consome o score numerico tambem (pra segmentacao fina), o
-valor fica stale do lado dele.
+**Status:** pesquisa na documentacao Smartico concluida em 20/04/2026; precisa validacao operacional com Raphael antes de implementar.
 
-**Por que nao e critico:** a auditoria nao confirmou que Smartico usa
-score_norm — so levantou a possibilidade. Se confirmado que usa so as
-tags, o comportamento atual e o correto e nao precisa fix.
+**Resposta tecnica confirmada na doc oficial Smartico:**
+- **SIM**, Smartico consome fields numericos custom (separados das tags)
+- Tags usam mecanismo `core_external_markers` / `markers2`
+- **Custom Properties** sao tipados (numerico, data, etc) e pushados via
+  endpoint S2S `update_profile` (`https://imgX.smr.vc/s2s-api`)
+- Custom Properties **podem ser usadas em segmentacao** no Query Builder
+  (ex: `score_norm >= 70` e criterio valido)
+- **Pre-requisito:** custom fields precisam ser **provisionados pelo
+  suporte Smartico via JIRA** — nao se cria via API
 
-**Acao:** 1 pergunta pro Raphael. Resposta "so tags" -> fecha o ticket.
-Resposta "usa score" -> ajuste de 1 linha no criterio de diff.
+**Fontes:** smartico.ai docs (user-profile-properties, custom-fields-attributes,
+query-builder, data-integration), smarticoai/public-api (GitHub).
 
-### 4.3 Mantido como esta — AVG -> mediana em ENGAGED/ZERO_RISK/BEHAV_RISK
+**3 perguntas pro Raphael (destravar decisao):**
+1. Ja temos custom properties numericas provisionadas no nosso tenant
+   Smartico, ou precisamos abrir ticket JIRA no suporte deles pra criar um
+   campo `score_norm` (INTEGER 0-100)?
+2. Qual endpoint/evento S2S voce usa hoje pra `update_profile` — pra eu
+   alinhar o payload de `push_risk_matrix_to_smartico.py`?
+3. Voce enxerga valor em ter o score numerico cru no painel pra montar
+   automations com faixas dinamicas (ex: "score caiu X pontos em 7 dias"),
+   ou as tags discretas ja atendem 100% dos casos de uso de CRM planejados?
 
-**Decisao:** nao trocar agora.
+**Recomendacao tecnica:** enviar `score_norm` como property numerica
+(granularidade pra automations) + manter as tags `RISK_TIER_*`
+(legibilidade em dashboard e uso imediato em flows ja configurados). Nao
+substitui, complementa.
+
+### 4.3 BLOQUEADO ATE CONCLUIR 4.1 + 4.2 — AVG -> mediana em ENGAGED/ZERO_RISK/BEHAV_RISK
+
+**Status:** bloqueado ate decisao de 4.1 e 4.2 concluir.
+
+**Motivo do bloqueio:** trocar AVG por mediana muda quem cai em cada
+bucket do CRM. Se essa mudanca acontecer antes de 4.1 (tag NEW) e 4.2
+(score_norm), o Raphael vai ter que validar 3 mudancas de contrato CRM
+ao mesmo tempo — excesso de risco operacional. Melhor sequenciar:
+1. Primeiro: ativar NEW (4.1) e configurar score_norm se aprovado (4.2)
+2. Depois: trocar AVG -> mediana nas 3 tags comportamentais, com shadow
+   mode de 1 semana + rollout gradual
+
+**Decisao:** **nao trocar agora.**
 
 **Por que levantei:** AVG em distribuicao skewed (cauda longa) engana.
 Exemplo concreto em ENGAGED_PLAYER:
@@ -225,13 +266,29 @@ git push origin main
 
 ---
 
-## 7. Proximos passos
+## 7. Proximos passos (em ordem)
 
-1. **Commitar tudo** (estrutura acima ou compactada)
-2. **Agendar reuniao 15 min** com Raphael + Castrin pra decidir PCR_RATING_NEW (doc: `proposta_pcr_rating_new_20260420.md`)
-3. **1 pergunta pro Raphael** sobre score_norm no Smartico (4.2)
-4. **Proximo sprint:** avaliar AVG -> mediana em ENGAGED/ZERO_RISK/BEHAV_RISK com rollout em shadow mode (4.3)
-5. **Aguardar Gusta** definir nova arquitetura pra entao decidir unificacao `scripts/sql/` vs `ec2_deploy/sql/` (4.4)
+1. **[FEITO]** Commitar tudo no git (a8686e3 + 217d4ef + 6e50b0c)
+
+2. **[EM ANDAMENTO — Raphael + Castrin]** Decidir PCR_RATING_NEW
+   - Codigo ja em shadow mode (tabela grava NEW, push nao envia)
+   - Levar proposta tecnica na reuniao: [proposta_pcr_rating_new_20260420.md](proposta_pcr_rating_new_20260420.md)
+   - Decisao necessaria: (a) aprovar thresholds 14d/3dep? (b) criar tag no Smartico + jornada boas-vindas?
+   - Apos aprovacao: trocar `PUSH_NEW_TAG_ENABLED = False` -> `True` + rollout 3 fases
+
+3. **[EM ANDAMENTO — Raphael]** Confirmar viabilidade de `score_norm` como Smartico Custom Property
+   - Pesquisa tecnica concluida: Smartico SUPORTA (via S2S `update_profile`)
+   - 3 perguntas especificas pro Raphael listadas na secao 4.2
+   - Resposta define se vale o trabalho de provisionar via JIRA
+
+4. **[BLOQUEADO ATE 2 E 3 CONCLUIREM]** AVG -> mediana em ENGAGED/ZERO_RISK/BEHAV_RISK
+   - NAO fazer ate 4.1 (PCR_RATING_NEW) e 4.2 (score_norm) fecharem
+   - Motivo: evitar 3 mudancas de contrato CRM simultaneas
+   - Plano: shadow mode 1 semana + rollout gradual apos validacao
+
+5. **[AGUARDANDO GUSTA]** Unificar `scripts/sql/` vs `ec2_deploy/sql/`
+   - Esperar decisao da nova arquitetura pos-migracao EC2
+   - Ver `project_ec2_migracao_orquestrador.md`
 
 ---
 

@@ -53,6 +53,13 @@ BRT = timezone(timedelta(hours=-3))
 SNAPSHOT_DATE = datetime.now(BRT).strftime("%Y-%m-%d")
 # Estrategia DELETE WHERE snapshot_date + INSERT — preserva historico para diff/backtest
 
+# Thresholds do rating NEW (novatos) — ver docs/proposta_pcr_rating_new_20260420.md
+# Jogador com menos de 14 dias ativos OU menos de 3 depositos totais e separado
+# do ranking PVS pra evitar instabilidade estatistica da formula com n pequeno.
+# Aguardando aprovacao Raphael (CRM) + Castrin (Head) pra ativar push Smartico.
+NOVATO_DAYS_THRESHOLD = 14
+NOVATO_DEPOSITS_THRESHOLD = 3
+
 # ============================================================
 # DDL — Tabela + View
 # ============================================================
@@ -63,7 +70,7 @@ CREATE TABLE IF NOT EXISTS multibet.pcr_ratings (
     snapshot_date       DATE            NOT NULL,
     player_id           BIGINT          NOT NULL,
     external_id         BIGINT,
-    rating              VARCHAR(2)      NOT NULL,
+    rating              VARCHAR(10)     NOT NULL,  -- v1.3: ampliado de VARCHAR(2) pra aceitar 'NEW' (novatos)
     pvs                 NUMERIC(8, 2)   NOT NULL,
     ggr_total           NUMERIC(15, 2),
     ngr_total           NUMERIC(15, 2),
@@ -95,6 +102,12 @@ DDL_INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_pcr_category ON multibet.pcr_ratings (snapshot_date, c_category);",
 ]
 
+# v1.3 (20/04/2026): ampliar coluna rating em bases que ja existem pra aceitar 'NEW'.
+# Idempotente: PostgreSQL permite ALTER TYPE pra VARCHAR maior sem perda de dados.
+DDL_ALTER_RATING_V13 = (
+    "ALTER TABLE multibet.pcr_ratings ALTER COLUMN rating TYPE VARCHAR(10);"
+)
+
 DDL_VIEW = """
 CREATE OR REPLACE VIEW multibet.pcr_atual AS
 SELECT *
@@ -121,12 +134,13 @@ WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM multibet.pcr_ratings)
 GROUP BY snapshot_date, rating
 ORDER BY
     CASE rating
-        WHEN 'S' THEN 1
-        WHEN 'A' THEN 2
-        WHEN 'B' THEN 3
-        WHEN 'C' THEN 4
-        WHEN 'D' THEN 5
-        WHEN 'E' THEN 6
+        WHEN 'S'   THEN 1
+        WHEN 'A'   THEN 2
+        WHEN 'B'   THEN 3
+        WHEN 'C'   THEN 4
+        WHEN 'D'   THEN 5
+        WHEN 'E'   THEN 6
+        WHEN 'NEW' THEN 7  -- v1.3: novatos no final da lista (bucket separado)
     END;
 """
 
@@ -323,19 +337,57 @@ def calcular_pvs(df: pd.DataFrame) -> pd.DataFrame:
 
 def atribuir_rating(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Rating PCR escala E-S (v1.2):
-      E = Bottom 25% | D = 25-50% | C = 50-75% | B = 75-92% | A = 92-99% | S = Top 1%
+    Rating PCR escala E-S + NEW (v1.3):
+      NEW = novatos (days_active < 14 OU num_deposits < 3) — fora do ranking PVS
+      E   = Bottom 25% dos maduros
+      D   = 25-50%
+      C   = 50-75%
+      B   = 75-92%
+      A   = 92-99%
+      S   = Top 1%
+
+    Motivo da separacao NEW (auditoria 20/04/2026, proposta PCR_RATING_NEW):
+      Jogadores com amostra pequena (1 deposito, < 2 semanas de atividade)
+      geram ratios instaveis no PVS (bonus_ratio, margem_ggr, taxa_atividade).
+      Sem separacao, FTD recente cai automaticamente em rating E por
+      construcao matematica, recebendo campanha de reativacao quando
+      deveria receber jornada de onboarding/boas-vindas.
     """
-    log.info("Atribuindo ratings PCR (escala E-S v1.2)...")
+    log.info("Atribuindo ratings PCR (escala E-S + NEW, v1.3)...")
     result = df.copy()
 
-    p25 = result["pvs"].quantile(0.25)
-    p50 = result["pvs"].quantile(0.50)
-    p75 = result["pvs"].quantile(0.75)
-    p92 = result["pvs"].quantile(0.92)
-    p99 = result["pvs"].quantile(0.99)
+    # Separa novatos ANTES do ranking PVS
+    eh_novato = (
+        (result["days_active"] < NOVATO_DAYS_THRESHOLD)
+        | (result["num_deposits"] < NOVATO_DEPOSITS_THRESHOLD)
+    )
+    qtd_novatos = int(eh_novato.sum())
+    qtd_maduros = int((~eh_novato).sum())
+    log.info(
+        f"  NEW (novatos): {qtd_novatos:,} "
+        f"({qtd_novatos/len(result)*100:.1f}% da base) "
+        f"| days_active < {NOVATO_DAYS_THRESHOLD} OR num_deposits < {NOVATO_DEPOSITS_THRESHOLD}"
+    )
+    log.info(f"  Maduros (entram no ranking PVS): {qtd_maduros:,}")
 
-    log.info(f"  Cortes PVS: E<{p25:.1f} | D<{p50:.1f} | C<{p75:.1f} | B<{p92:.1f} | A<{p99:.1f} | S>={p99:.1f}")
+    # Calcula percentis apenas nos maduros (pra nao distorcer a cauda)
+    pvs_maduros = result.loc[~eh_novato, "pvs"]
+    if qtd_maduros == 0:
+        log.warning("  Nenhum jogador maduro — nao ha ranking PVS pra calcular.")
+        result["rating"] = np.where(eh_novato, "NEW", "E")
+        return result
+
+    p25 = pvs_maduros.quantile(0.25)
+    p50 = pvs_maduros.quantile(0.50)
+    p75 = pvs_maduros.quantile(0.75)
+    p92 = pvs_maduros.quantile(0.92)
+    p99 = pvs_maduros.quantile(0.99)
+
+    log.info(
+        f"  Cortes PVS (so maduros): "
+        f"E<{p25:.1f} | D<{p50:.1f} | C<{p75:.1f} | "
+        f"B<{p92:.1f} | A<{p99:.1f} | S>={p99:.1f}"
+    )
 
     conditions = [
         result["pvs"] >= p99,
@@ -346,6 +398,9 @@ def atribuir_rating(df: pd.DataFrame) -> pd.DataFrame:
     ]
     choices = ["S", "A", "B", "C", "D"]
     result["rating"] = np.select(conditions, choices, default="E")
+
+    # Sobrescreve novatos com NEW (mesmo que tenham PVS alto — amostra insuficiente)
+    result.loc[eh_novato, "rating"] = "NEW"
 
     return result
 
@@ -375,6 +430,12 @@ def setup_table():
     log.info("Verificando/criando estrutura no Super Nova DB...")
     execute_supernova(DDL_SCHEMA)
     execute_supernova(DDL_TABLE)
+    # v1.3: amplia VARCHAR(2) -> VARCHAR(10) em bases ja existentes pra aceitar 'NEW'.
+    # Idempotente — roda sempre e e no-op se ja estiver VARCHAR(10).
+    try:
+        execute_supernova(DDL_ALTER_RATING_V13)
+    except Exception as e:
+        log.warning(f"  ALTER TABLE rating VARCHAR(10) falhou (provavelmente ja aplicado): {e}")
     for idx_sql in DDL_INDEXES:
         execute_supernova(idx_sql)
     execute_supernova(DDL_VIEW)
