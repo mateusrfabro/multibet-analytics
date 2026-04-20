@@ -1,6 +1,18 @@
 # Schema Document — Camada Bronze MultiBet
 ## Super Nova DB (PostgreSQL) — Schema `multibet`
 
+> **ARQUIVADO EM 2026-04-20 — DOCUMENTO OBSOLETO**
+>
+> A camada Bronze do schema `multibet` foi **descontinuada**. Todos os pipelines agora
+> leem Athena diretamente e persistem apenas agregados (silver/gold) no Super Nova DB.
+> As 24 tabelas `bronze_*` foram removidas do banco de producao.
+>
+> **Referencia atual:**
+> - [`docs/schema_multibet_database_v2.0.md`](../schema_multibet_database_v2.0.md) — dicionario completo do schema atual
+> - [`docs/inventario_schema_multibet.md`](../inventario_schema_multibet.md) — inventario resumido
+>
+> Este documento permanece apenas como referencia historica.
+
 **Versao:** 1.0
 **Data:** 2026-03-23
 **Responsavel:** Mateus Fabro — Squad Intelligence Engine

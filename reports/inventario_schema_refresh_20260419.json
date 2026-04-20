@@ -1,0 +1,1049 @@
+{
+  "generated_at": "2026-04-19T15:57:14",
+  "schemas": {
+    "multibet": [
+      {
+        "name": "mv_aquisicao",
+        "type": "matview",
+        "rows_estimate": 2238,
+        "size_bytes": 802816,
+        "n_columns": 0,
+        "comment": null
+      },
+      {
+        "name": "mv_cohort_aquisicao",
+        "type": "matview",
+        "rows_estimate": 23616,
+        "size_bytes": 5054464,
+        "n_columns": 0,
+        "comment": null
+      },
+      {
+        "name": "mv_cohort_retencao_ftd",
+        "type": "matview",
+        "rows_estimate": 58016,
+        "size_bytes": 13090816,
+        "n_columns": 0,
+        "comment": null
+      },
+      {
+        "name": "agg_btr_by_utm_campaign",
+        "type": "table",
+        "rows_estimate": 51,
+        "size_bytes": 32768,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "agg_cohort_acquisition",
+        "type": "table",
+        "rows_estimate": 203413,
+        "size_bytes": 36978688,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "agg_game_performance",
+        "type": "table",
+        "rows_estimate": 27622,
+        "size_bytes": 5873664,
+        "n_columns": 17,
+        "comment": null
+      },
+      {
+        "name": "aquisicao_trafego_diario",
+        "type": "table",
+        "rows_estimate": 111,
+        "size_bytes": 122880,
+        "n_columns": 16,
+        "comment": "Metricas diarias de aquisicao por canal de trafego pago. Alimentado pelo ETL etl_aquisicao_trafego_diario.py (Athena -> Super Nova DB). Consumido pelo front db.supernovagaming.com.br aba Aquisicao Trafego."
+      },
+      {
+        "name": "crm_campaign_comparison",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 24576,
+        "n_columns": 13,
+        "comment": null
+      },
+      {
+        "name": "crm_campaign_daily",
+        "type": "table",
+        "rows_estimate": 3037,
+        "size_bytes": 2433024,
+        "n_columns": 48,
+        "comment": null
+      },
+      {
+        "name": "crm_campaign_game_daily",
+        "type": "table",
+        "rows_estimate": 20,
+        "size_bytes": 106496,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "crm_campaign_segment_daily",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 24576,
+        "n_columns": 12,
+        "comment": null
+      },
+      {
+        "name": "crm_dispatch_budget",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 57344,
+        "n_columns": 12,
+        "comment": null
+      },
+      {
+        "name": "crm_player_vip_tier",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 32768,
+        "n_columns": 8,
+        "comment": null
+      },
+      {
+        "name": "crm_recovery_daily",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 57344,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "crm_vip_group_daily",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 57344,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "dim_affiliate_source",
+        "type": "table",
+        "rows_estimate": 4579,
+        "size_bytes": 1138688,
+        "n_columns": 8,
+        "comment": null
+      },
+      {
+        "name": "dim_campaign_affiliate",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 32768,
+        "n_columns": 6,
+        "comment": null
+      },
+      {
+        "name": "dim_crm_friendly_names",
+        "type": "table",
+        "rows_estimate": 1443,
+        "size_bytes": 335872,
+        "n_columns": 6,
+        "comment": null
+      },
+      {
+        "name": "dim_games_catalog",
+        "type": "table",
+        "rows_estimate": 381,
+        "size_bytes": 155648,
+        "n_columns": 16,
+        "comment": null
+      },
+      {
+        "name": "dim_marketing_mapping",
+        "type": "table",
+        "rows_estimate": 3241,
+        "size_bytes": 2015232,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "dim_marketing_mapping_bkp_20260319",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 16384,
+        "n_columns": 5,
+        "comment": null
+      },
+      {
+        "name": "etl_active_player_retention_weekly",
+        "type": "table",
+        "rows_estimate": 26,
+        "size_bytes": 24576,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "etl_control",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 24576,
+        "n_columns": 6,
+        "comment": null
+      },
+      {
+        "name": "fact_ad_spend",
+        "type": "table",
+        "rows_estimate": 2605,
+        "size_bytes": 1024000,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "fact_affiliate_revenue",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 24576,
+        "n_columns": 14,
+        "comment": null
+      },
+      {
+        "name": "fact_attribution",
+        "type": "table",
+        "rows_estimate": 154684,
+        "size_bytes": 69951488,
+        "n_columns": 8,
+        "comment": null
+      },
+      {
+        "name": "fact_casino_rounds",
+        "type": "table",
+        "rows_estimate": 122910,
+        "size_bytes": 37470208,
+        "n_columns": 25,
+        "comment": null
+      },
+      {
+        "name": "fact_crm_daily_performance",
+        "type": "table",
+        "rows_estimate": 2179,
+        "size_bytes": 2940928,
+        "n_columns": 13,
+        "comment": null
+      },
+      {
+        "name": "fact_ftd_deposits",
+        "type": "table",
+        "rows_estimate": 29833,
+        "size_bytes": 12107776,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "fact_gaming_activity_daily",
+        "type": "table",
+        "rows_estimate": 116739,
+        "size_bytes": 56287232,
+        "n_columns": 15,
+        "comment": null
+      },
+      {
+        "name": "fact_jackpots",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 57344,
+        "n_columns": 12,
+        "comment": null
+      },
+      {
+        "name": "fact_live_casino",
+        "type": "table",
+        "rows_estimate": 11674,
+        "size_bytes": 3006464,
+        "n_columns": 17,
+        "comment": null
+      },
+      {
+        "name": "fact_player_activity",
+        "type": "table",
+        "rows_estimate": 142,
+        "size_bytes": 81920,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "fact_player_engagement_daily",
+        "type": "table",
+        "rows_estimate": 154651,
+        "size_bytes": 24928256,
+        "n_columns": 14,
+        "comment": null
+      },
+      {
+        "name": "fact_redeposits",
+        "type": "table",
+        "rows_estimate": 154980,
+        "size_bytes": 23314432,
+        "n_columns": 14,
+        "comment": null
+      },
+      {
+        "name": "fact_registrations",
+        "type": "table",
+        "rows_estimate": 171,
+        "size_bytes": 57344,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "fact_sports_bets",
+        "type": "table",
+        "rows_estimate": 172,
+        "size_bytes": 81920,
+        "n_columns": 17,
+        "comment": null
+      },
+      {
+        "name": "fact_sports_bets_by_sport",
+        "type": "table",
+        "rows_estimate": 1961,
+        "size_bytes": 647168,
+        "n_columns": 17,
+        "comment": null
+      },
+      {
+        "name": "fact_sports_odds_performance",
+        "type": "table",
+        "rows_estimate": 879,
+        "size_bytes": 303104,
+        "n_columns": 16,
+        "comment": null
+      },
+      {
+        "name": "fact_sports_open_bets",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 24576,
+        "n_columns": 8,
+        "comment": null
+      },
+      {
+        "name": "fct_active_players_by_period",
+        "type": "table",
+        "rows_estimate": 18,
+        "size_bytes": 24576,
+        "n_columns": 7,
+        "comment": null
+      },
+      {
+        "name": "fct_casino_activity",
+        "type": "table",
+        "rows_estimate": 174,
+        "size_bytes": 65536,
+        "n_columns": 12,
+        "comment": null
+      },
+      {
+        "name": "fct_player_performance_by_period",
+        "type": "table",
+        "rows_estimate": 693429,
+        "size_bytes": 218079232,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "fct_sports_activity",
+        "type": "table",
+        "rows_estimate": 173,
+        "size_bytes": 65536,
+        "n_columns": 13,
+        "comment": null
+      },
+      {
+        "name": "game_image_mapping",
+        "type": "table",
+        "rows_estimate": 2715,
+        "size_bytes": 2392064,
+        "n_columns": 23,
+        "comment": null
+      },
+      {
+        "name": "grandes_ganhos",
+        "type": "table",
+        "rows_estimate": 50,
+        "size_bytes": 81920,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "migrations",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 32768,
+        "n_columns": 3,
+        "comment": null
+      },
+      {
+        "name": "mv_sports_open_bets_by_odds",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 24576,
+        "n_columns": 6,
+        "comment": null
+      },
+      {
+        "name": "mv_top_sports_events_daily",
+        "type": "table",
+        "rows_estimate": 19598,
+        "size_bytes": 8691712,
+        "n_columns": 16,
+        "comment": null
+      },
+      {
+        "name": "pcr_ratings",
+        "type": "table",
+        "rows_estimate": 151572,
+        "size_bytes": 37289984,
+        "n_columns": 25,
+        "comment": null
+      },
+      {
+        "name": "risk_tags",
+        "type": "table",
+        "rows_estimate": 2376997,
+        "size_bytes": 793444352,
+        "n_columns": 30,
+        "comment": null
+      },
+      {
+        "name": "risk_tags_pgs",
+        "type": "table",
+        "rows_estimate": 398570,
+        "size_bytes": 131268608,
+        "n_columns": 26,
+        "comment": null
+      },
+      {
+        "name": "segment_tags",
+        "type": "table",
+        "rows_estimate": 6373,
+        "size_bytes": 1679360,
+        "n_columns": 26,
+        "comment": null
+      },
+      {
+        "name": "silver_game_15min",
+        "type": "table",
+        "rows_estimate": 110,
+        "size_bytes": 49152,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "silver_game_activity",
+        "type": "table",
+        "rows_estimate": 332550,
+        "size_bytes": 42655744,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "silver_jogadores_ganhos",
+        "type": "table",
+        "rows_estimate": 2105849,
+        "size_bytes": 272097280,
+        "n_columns": 8,
+        "comment": null
+      },
+      {
+        "name": "silver_jogos_jogadores_ativos",
+        "type": "table",
+        "rows_estimate": 7266,
+        "size_bytes": 655360,
+        "n_columns": 5,
+        "comment": null
+      },
+      {
+        "name": "silver_tab_user_ftd",
+        "type": "table",
+        "rows_estimate": 217298,
+        "size_bytes": 26804224,
+        "n_columns": 3,
+        "comment": null
+      },
+      {
+        "name": "tab_affiliate",
+        "type": "table",
+        "rows_estimate": 3233,
+        "size_bytes": 475136,
+        "n_columns": 2,
+        "comment": null
+      },
+      {
+        "name": "tab_ativos",
+        "type": "table",
+        "rows_estimate": 176,
+        "size_bytes": 98304,
+        "n_columns": 2,
+        "comment": null
+      },
+      {
+        "name": "tab_atualizacao",
+        "type": "table",
+        "rows_estimate": -1,
+        "size_bytes": 8192,
+        "n_columns": 3,
+        "comment": null
+      },
+      {
+        "name": "tab_btr",
+        "type": "table",
+        "rows_estimate": 173,
+        "size_bytes": 114688,
+        "n_columns": 2,
+        "comment": null
+      },
+      {
+        "name": "tab_cassino",
+        "type": "table",
+        "rows_estimate": 176,
+        "size_bytes": 212992,
+        "n_columns": 5,
+        "comment": null
+      },
+      {
+        "name": "tab_dep_user",
+        "type": "table",
+        "rows_estimate": 1679098,
+        "size_bytes": 1184448512,
+        "n_columns": 4,
+        "comment": null
+      },
+      {
+        "name": "tab_dep_with",
+        "type": "table",
+        "rows_estimate": 474,
+        "size_bytes": 131072,
+        "n_columns": 10,
+        "comment": null
+      },
+      {
+        "name": "tab_hour_ativos",
+        "type": "table",
+        "rows_estimate": 4144,
+        "size_bytes": 1310720,
+        "n_columns": 3,
+        "comment": null
+      },
+      {
+        "name": "tab_hour_cassino",
+        "type": "table",
+        "rows_estimate": 4156,
+        "size_bytes": 1818624,
+        "n_columns": 6,
+        "comment": null
+      },
+      {
+        "name": "tab_hour_dep_with",
+        "type": "table",
+        "rows_estimate": 11329,
+        "size_bytes": 5734400,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "tab_hour_sports",
+        "type": "table",
+        "rows_estimate": 4132,
+        "size_bytes": 2441216,
+        "n_columns": 10,
+        "comment": null
+      },
+      {
+        "name": "tab_hour_user_ftd",
+        "type": "table",
+        "rows_estimate": 11326,
+        "size_bytes": 4153344,
+        "n_columns": 8,
+        "comment": null
+      },
+      {
+        "name": "tab_sports",
+        "type": "table",
+        "rows_estimate": 174,
+        "size_bytes": 81920,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "tab_user_affiliate",
+        "type": "table",
+        "rows_estimate": 1100181,
+        "size_bytes": 167116800,
+        "n_columns": 4,
+        "comment": null
+      },
+      {
+        "name": "tab_user_daily",
+        "type": "table",
+        "rows_estimate": 4940444,
+        "size_bytes": 1345748992,
+        "n_columns": 14,
+        "comment": null
+      },
+      {
+        "name": "tab_user_ftd",
+        "type": "table",
+        "rows_estimate": 475,
+        "size_bytes": 237568,
+        "n_columns": 7,
+        "comment": null
+      },
+      {
+        "name": "tab_with_user",
+        "type": "table",
+        "rows_estimate": 381826,
+        "size_bytes": 192372736,
+        "n_columns": 2,
+        "comment": null
+      },
+      {
+        "name": "trackings",
+        "type": "table",
+        "rows_estimate": 50680,
+        "size_bytes": 10969088,
+        "n_columns": 7,
+        "comment": null
+      },
+      {
+        "name": "active_users",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 4,
+        "comment": null
+      },
+      {
+        "name": "atualizacao",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 2,
+        "comment": null
+      },
+      {
+        "name": "cohort_aquisicao",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 6,
+        "comment": null
+      },
+      {
+        "name": "cohort_retencao_ftd",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 6,
+        "comment": null
+      },
+      {
+        "name": "game_paid_15min",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 3,
+        "comment": null
+      },
+      {
+        "name": "heatmap_hour",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "jogo_total_pago_hoje",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 4,
+        "comment": null
+      },
+      {
+        "name": "matriz_aquisicao",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 20,
+        "comment": null
+      },
+      {
+        "name": "matriz_financeiro",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 26,
+        "comment": null
+      },
+      {
+        "name": "matriz_financeiro_hora",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 22,
+        "comment": null
+      },
+      {
+        "name": "matriz_financeiro_mensal",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 22,
+        "comment": null
+      },
+      {
+        "name": "matriz_financeiro_semanal",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 22,
+        "comment": null
+      },
+      {
+        "name": "matriz_risco",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 8,
+        "comment": null
+      },
+      {
+        "name": "pcr_atual",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 25,
+        "comment": null
+      },
+      {
+        "name": "pcr_resumo",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "top_jogadores_ganhos",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 7,
+        "comment": null
+      },
+      {
+        "name": "user_game_activity_30d",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "vw_acquisition_channel",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "vw_active_player_retention_weekly",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "vw_active_players_period",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 7,
+        "comment": null
+      },
+      {
+        "name": "vw_ad_spend_by_source",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "vw_ad_spend_daily",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 10,
+        "comment": null
+      },
+      {
+        "name": "vw_aquisicao_trafego",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 17,
+        "comment": "View de consumo do front \u2014 aba Aquisicao Trafego. Dados da tabela aquisicao_trafego_diario. Filtrar por canal e data no front. Colunas em portugues para o front."
+      },
+      {
+        "name": "vw_attribution_metrics",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "vw_casino_by_category",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 12,
+        "comment": null
+      },
+      {
+        "name": "vw_casino_by_provider",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 16,
+        "comment": null
+      },
+      {
+        "name": "vw_casino_kpis",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 15,
+        "comment": null
+      },
+      {
+        "name": "vw_casino_top_games",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 16,
+        "comment": null
+      },
+      {
+        "name": "vw_cohort_roi",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 13,
+        "comment": null
+      },
+      {
+        "name": "vw_front_api_games",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 16,
+        "comment": "Shape 1:1 com GameResponseDto da categories-api. Front consome via /games/*.\n Refresh: pipeline game_image_mapper a cada 4h (cron EC2 ETL).\n Fonte catalogo: bireports_ec2 + vendor_ec2. Fonte metricas: silver_game_15min (24h rolantes)."
+      },
+      {
+        "name": "vw_front_by_category",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 10,
+        "comment": null
+      },
+      {
+        "name": "vw_front_by_vendor",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 10,
+        "comment": null
+      },
+      {
+        "name": "vw_front_jackpot",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 7,
+        "comment": null
+      },
+      {
+        "name": "vw_front_live_casino",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 10,
+        "comment": null
+      },
+      {
+        "name": "vw_front_top_24h",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "vw_ltv_cac_ratio",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 6,
+        "comment": null
+      },
+      {
+        "name": "vw_odds_performance_by_range",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 15,
+        "comment": null
+      },
+      {
+        "name": "vw_odds_performance_summary",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 17,
+        "comment": null
+      },
+      {
+        "name": "vw_player_performance_period",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 11,
+        "comment": null
+      },
+      {
+        "name": "vw_roi_by_source",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 20,
+        "comment": null
+      },
+      {
+        "name": "vw_segmentacao_hibrida",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 34,
+        "comment": null
+      },
+      {
+        "name": "vw_sportsbook_by_sport",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 19,
+        "comment": null
+      },
+      {
+        "name": "vw_sportsbook_exposure",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "vw_sportsbook_kpis",
+        "type": "view",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 16,
+        "comment": null
+      }
+    ],
+    "play4": [
+      {
+        "name": "heatmap_hour",
+        "type": "foreign_table",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 9,
+        "comment": null
+      },
+      {
+        "name": "matriz_aquisicao",
+        "type": "foreign_table",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 14,
+        "comment": null
+      },
+      {
+        "name": "matriz_financeiro",
+        "type": "foreign_table",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 26,
+        "comment": null
+      },
+      {
+        "name": "matriz_financeiro_hora",
+        "type": "foreign_table",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 22,
+        "comment": null
+      },
+      {
+        "name": "mv_aquisicao",
+        "type": "foreign_table",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 14,
+        "comment": null
+      },
+      {
+        "name": "mv_cohort_aquisicao",
+        "type": "foreign_table",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 6,
+        "comment": null
+      },
+      {
+        "name": "tab_cassino",
+        "type": "foreign_table",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 2,
+        "comment": null
+      },
+      {
+        "name": "tab_sports",
+        "type": "foreign_table",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 2,
+        "comment": null
+      },
+      {
+        "name": "vw_active_player_retention_weekly",
+        "type": "foreign_table",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 8,
+        "comment": null
+      },
+      {
+        "name": "vw_ggr_player_game_daily",
+        "type": "foreign_table",
+        "rows_estimate": -1,
+        "size_bytes": 0,
+        "n_columns": 31,
+        "comment": null
+      }
+    ]
+  }
+}

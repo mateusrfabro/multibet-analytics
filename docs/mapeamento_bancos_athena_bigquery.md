@@ -2,6 +2,20 @@
 **Data:** 2026-03-18 | **Autor:** Mateus F. (Squad Intelligence Engine)
 **Objetivo:** Documentar a estrutura completa dos dois bancos para alinhamento com o arquiteto.
 
+> **AVISO — BIGQUERY DESATIVADO (19/04/2026)**
+>
+> As secoes e exemplos referentes ao **BigQuery Smartico** neste documento estao
+> mantidos apenas como referencia historica. O acesso foi encerrado em 19/04/2026
+> (credenciais `invalid_grant: account not found`). **Nao usar BQ em novas analises.**
+>
+> Fontes operacionais atuais:
+> - **Athena** (leitura) — databases `*_ec2`, `ps_bi`, `silver`
+> - **Super Nova DB** (escrita / leitura de agregados) — schema `multibet`
+> - **Super Nova Bet DB** (Play4Tune / Paquistao) — via `db/supernova_bet.py` ou schema `play4`
+>
+> Para operacoes CRM que dependiam de BQ, migramos para **Smartico S2S API**
+> (push diario em EC2 02:30 BRT a partir de `multibet.risk_tags`).
+
 ---
 
 ## 1. Visao Geral
