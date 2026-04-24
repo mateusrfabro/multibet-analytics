@@ -101,6 +101,7 @@ import re
 import unicodedata
 import logging
 from datetime import datetime, timezone, timedelta
+import urllib.request
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -211,8 +212,8 @@ def slugify(name):
     name = name.encode("ascii", "ignore").decode("ascii")
     name = name.lower().strip()
     name = re.sub(r"[^\w\s-]", "", name)
-    name = re.sub(r"[\s_]+", "-", name)
-    name = re.sub(r"-+", "-", name)
+    name = re.sub(r"[\s-]+", "_", name)
+    name = re.sub(r"_+", "_", name)
     return name
 
 
@@ -220,6 +221,61 @@ def build_game_url(game_name):
     if not game_name:
         return None
     return f"/pb/gameplay/{slugify(game_name)}/real-game"
+
+
+# --- CDN auto-discovery (validador pos-refresh) --------------------------
+CDN_BASE_URL = "https://multi.bet.br/uploads/games/MUL"
+
+# Vendor -> prefixo CDN (validados empiricamente 14/04/2026)
+VENDOR_CDN_PREFIX = {
+    "pragmaticplay": "pp",
+    "pragmaticexternal": "pp",
+    "evolution": "alea_evo",
+    "tadagaming": "alea_tad",
+}
+
+
+def check_url_exists(url, timeout=5):
+    """HEAD request para verificar se URL do CDN existe (HTTP 200)."""
+    try:
+        req = urllib.request.Request(url, method="HEAD")
+        req.add_header("User-Agent", "Mozilla/5.0")
+        resp = urllib.request.urlopen(req, timeout=timeout)
+        return resp.status == 200
+    except Exception:
+        return False
+
+
+def try_resolve_cdn_url(game_id, vendor_id):
+    """Tenta construir URL CDN baseado em vendor + game_id e verifica com HEAD.
+
+    Padrao CDN: https://multi.bet.br/uploads/games/MUL/{key}/{key}.webp
+    Retorna a URL se encontrada, None caso contrario.
+    """
+    if not game_id or not vendor_id:
+        return None
+
+    vendor_lower = str(vendor_id).lower().strip()
+    game_id_str = str(game_id).strip()
+    candidates = []
+
+    # 1. Prefixo conhecido do vendor
+    prefix = VENDOR_CDN_PREFIX.get(vendor_lower)
+    if prefix:
+        key = f"{prefix}{game_id_str}"
+        candidates.append(f"{CDN_BASE_URL}/{key}/{key}.webp")
+
+    # 2. Padrao generico alea_{vendor_3chars}{game_id}
+    vendor_short = vendor_lower[:3]
+    key_generic = f"alea_{vendor_short}{game_id_str}"
+    if not any(key_generic in c for c in candidates):
+        candidates.append(f"{CDN_BASE_URL}/{key_generic}/{key_generic}.webp")
+
+    for url in candidates:
+        if check_url_exists(url):
+            return url
+
+    return None
 
 
 def setup_table():
@@ -322,10 +378,138 @@ def refresh():
     log.info(f"{len(records)} registros inseridos em multibet.grandes_ganhos.")
 
 
+def validate_and_fix_images():
+    """Validador pos-refresh: verifica se ha jogos sem game_image_url na grandes_ganhos.
+
+    Se houver, consulta o catalogo Athena para obter game_id/vendor, tenta descobrir
+    a URL CDN automaticamente (HEAD request), e atualiza game_image_mapping + grandes_ganhos.
+
+    So roda quando ha jogos com game_image_url NULL — se tudo estiver OK, pula.
+    """
+    log.info("--- Validando game_image_url nos registros inseridos ---")
+
+    # 1. Busca jogos sem imagem na grandes_ganhos
+    rows_missing = execute_supernova(
+        """
+        SELECT DISTINCT game_name
+        FROM multibet.grandes_ganhos
+        WHERE game_image_url IS NULL
+           OR TRIM(game_image_url) = ''
+        """,
+        fetch=True,
+    ) or []
+
+    if not rows_missing:
+        log.info("Validacao OK: todos os jogos possuem game_image_url.")
+        return
+
+    # Mapeia UPPER -> nome original (preserva casing)
+    missing_map = {r[0].upper().strip(): r[0] for r in rows_missing}
+    missing_names = list(missing_map.keys())
+    log.warning(f"{len(missing_names)} jogos sem game_image_url: {list(missing_map.values())}")
+
+    # 2. Busca game_id + vendor no catalogo Athena (bireports)
+    names_escaped = [n.replace("'", "''") for n in missing_names]
+    names_sql = ", ".join([f"'{n}'" for n in names_escaped])
+
+    query_catalog = f"""
+    SELECT
+        UPPER(TRIM(c_game_desc))  AS game_name_upper,
+        c_game_id,
+        c_vendor_id
+    FROM (
+        SELECT
+            c_game_desc, c_game_id, c_vendor_id,
+            ROW_NUMBER() OVER (
+                PARTITION BY UPPER(TRIM(c_game_desc))
+                ORDER BY CASE WHEN c_client_platform = 'WEB' THEN 0 ELSE 1 END
+            ) AS rn
+        FROM bireports_ec2.tbl_vendor_games_mapping_data
+        WHERE c_status = 'active'
+          AND UPPER(TRIM(c_game_desc)) IN ({names_sql})
+    )
+    WHERE rn = 1
+    """
+
+    try:
+        df_catalog = query_athena(query_catalog, database="bireports_ec2")
+        log.info(f"Catalogo Athena: {len(df_catalog)} jogos encontrados para resolucao.")
+    except Exception as e:
+        log.error(f"Falha ao buscar catalogo Athena: {e}")
+        return
+
+    if df_catalog.empty:
+        log.warning("Nenhum jogo faltante no catalogo Athena. Correcao manual necessaria (fix_missing_game_images.py).")
+        return
+
+    # 3. Tenta descobrir URL CDN para cada jogo (HEAD request)
+    fixed = []
+    for _, row in df_catalog.iterrows():
+        game_name_upper = row["game_name_upper"]
+        game_id = row["c_game_id"]
+        vendor_id = row["c_vendor_id"]
+
+        url = try_resolve_cdn_url(game_id, vendor_id)
+        if url:
+            log.info(f"  CDN encontrado: {game_name_upper} -> {url}")
+            original_name = missing_map.get(game_name_upper, game_name_upper.title())
+            fixed.append({
+                "game_name": original_name,
+                "game_name_upper": game_name_upper,
+                "game_id": str(game_id),
+                "vendor_id": vendor_id,
+                "url": url,
+            })
+        else:
+            log.warning(f"  CDN NAO encontrado: {game_name_upper} (vendor={vendor_id}, game_id={game_id})")
+
+    if not fixed:
+        log.warning("Nenhuma URL CDN descoberta automaticamente. Correcao manual necessaria (fix_missing_game_images.py).")
+        return
+
+    # 4. Atualiza game_image_mapping + grandes_ganhos
+    now_utc = datetime.now(timezone.utc)
+    tunnel, conn = get_supernova_connection()
+    try:
+        with conn.cursor() as cur:
+            for f in fixed:
+                slug = build_game_url(f["game_name"])
+
+                # Upsert no game_image_mapping (persiste para proximas execucoes)
+                cur.execute("""
+                    INSERT INTO multibet.game_image_mapping
+                        (game_name, game_name_upper, provider_game_id, vendor_id,
+                         game_image_url, game_slug, source, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, 'auto_fix', %s)
+                    ON CONFLICT (game_name_upper) DO UPDATE SET
+                        game_image_url = EXCLUDED.game_image_url,
+                        game_slug      = EXCLUDED.game_slug,
+                        source         = EXCLUDED.source,
+                        updated_at     = EXCLUDED.updated_at
+                """, (f["game_name"], f["game_name_upper"], f["game_id"],
+                      f["vendor_id"], f["url"], slug, now_utc))
+
+                # Update direto na grandes_ganhos (corrige o dado que o front le)
+                cur.execute("""
+                    UPDATE multibet.grandes_ganhos
+                    SET game_image_url = %s,
+                        game_slug     = COALESCE(game_slug, %s)
+                    WHERE UPPER(TRIM(game_name)) = %s
+                      AND (game_image_url IS NULL OR TRIM(game_image_url) = '')
+                """, (f["url"], slug, f["game_name_upper"]))
+
+        conn.commit()
+        log.info(f"Auto-fix concluido: {len(fixed)} jogos corrigidos em game_image_mapping + grandes_ganhos.")
+    finally:
+        conn.close()
+        tunnel.stop()
+
+
 if __name__ == "__main__":
     log.info("=== Iniciando pipeline Grandes Ganhos (v2 Athena) ===")
     setup_table()
     refresh()
+    validate_and_fix_images()
     log.info("=== Pipeline concluido ===")
 PYEOF
 echo "  OK: pipeline atualizado"

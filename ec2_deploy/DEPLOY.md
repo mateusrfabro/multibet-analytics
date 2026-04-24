@@ -259,6 +259,85 @@ ls -la output/risk_matrix_*
 
 ---
 
+## Sync Meta Ads Spend — cron diario (01:15 BRT = 04:15 UTC)
+
+Puxa spend diario por campanha da Meta Marketing API e persiste em
+`multibet.fact_ad_spend` no Super Nova DB (ad_source = 'meta').
+
+### Arquivos
+
+```
+multibet/
+├── pipelines/
+│   └── sync_meta_spend.py      ← pipeline principal
+├── db/
+│   └── meta_ads.py             ← conector Graph API
+├── run_sync_meta_ads.sh        ← wrapper do cron
+└── deploy_sync_meta_ads.sh     ← script de deploy
+```
+
+### Deploy (passo a passo)
+
+```bash
+# 1. Na maquina LOCAL — copiar arquivos para EC2 ETL via SCP
+
+EC2_IP="54.197.63.138"
+KEY="C:/Users/NITRO/Downloads/etl-key.pem"
+
+# Pipeline + Conector
+scp -i "$KEY" ec2_deploy/pipelines/sync_meta_spend.py \
+    ec2-user@$EC2_IP:/home/ec2-user/multibet/pipelines/
+scp -i "$KEY" ec2_deploy/db/meta_ads.py \
+    ec2-user@$EC2_IP:/home/ec2-user/multibet/db/
+
+# Wrapper cron + Deploy script
+scp -i "$KEY" ec2_deploy/run_sync_meta_ads.sh \
+    ec2-user@$EC2_IP:/home/ec2-user/multibet/
+scp -i "$KEY" ec2_deploy/deploy_sync_meta_ads.sh \
+    ec2-user@$EC2_IP:/home/ec2-user/multibet/
+
+# 2. Conectar na EC2 via SSH
+ssh -i "$KEY" ec2-user@$EC2_IP
+
+# 3. Rodar o deploy
+cd /home/ec2-user/multibet
+chmod +x deploy_sync_meta_ads.sh
+./deploy_sync_meta_ads.sh
+```
+
+### Credenciais necessarias no .env da EC2
+
+```
+META_ADS_ACCESS_TOKEN=EAA...
+META_ADS_ACCOUNT_IDS=act_1418521646228655,act_846913941192022,act_1531679918112645,act_1282215803969842,act_4397365763819913,act_26153688877615850,act_1394438821997847
+```
+
+### Teste manual
+
+```bash
+cd /home/ec2-user/multibet
+source venv/bin/activate
+python3 pipelines/sync_meta_spend.py --days 3
+```
+
+### Crontab
+
+```
+# Sync Meta Ads Spend — diario 01:15 BRT (04:15 UTC)
+15 4 * * * /home/ec2-user/multibet/run_sync_meta_ads.sh
+```
+
+> Roda diariamente as 01:15 BRT (15 min apos Google Ads).
+> --days 3: cobre D-1 + reprocessamentos. Idempotente (DELETE + INSERT).
+
+### Logs
+
+```bash
+tail -f pipelines/logs/sync_meta_ads_$(date +%Y-%m-%d).log
+```
+
+---
+
 ## Observações
 - A senha do Redshift expira periodicamente — atualizar no `.env` quando necessário.
 - O IP do bastion (`supernova.py`) pode mudar se a EC2 não tiver Elastic IP.

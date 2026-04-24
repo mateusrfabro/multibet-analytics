@@ -38,8 +38,8 @@ def slugify(name: str) -> str:
     name = name.encode("ascii", "ignore").decode("ascii")
     name = name.lower().strip()
     name = re.sub(r"[^\w\s-]", "", name)
-    name = re.sub(r"[\s_]+", "-", name)
-    name = re.sub(r"-+", "-", name)
+    name = re.sub(r"[\s-]+", "_", name)
+    name = re.sub(r"_+", "_", name)
     return name
 
 
@@ -58,6 +58,62 @@ MISSING_GAMES = [
         # Site multi.bet.br nao tem variante separada - 26/03/2026
         "game_name": "Zeus vs Hades \u2013 Gods of War 250",
         "game_image_url": "https://multi.bet.br//uploads/games/MUL//ppvs15godsofwar/ppvs15godsofwar.webp",
+    },
+    {
+        # Roulette generica Evolution (game_id=2654, so MOBILE no catalogo Athena)
+        # Scraper desktop nao captura — URL verificada via HEAD request 14/04/2026
+        "game_name": "Roulette",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_evo2654/alea_evo2654.webp",
+    },
+    # ── Tada Gaming — jogos novos sem imagem no grandes_ganhos (14/04/2026) ──
+    # URLs verificadas via HEAD request no CDN, padrao alea_tad{game_id}
+    {
+        "game_name": "Lucky Macaw",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad22384/alea_tad22384.webp",
+    },
+    {
+        "game_name": "3 Witch's Lamp",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad22386/alea_tad22386.webp",
+    },
+    {
+        "game_name": "Cash Coin",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad22810/alea_tad22810.webp",
+    },
+    {
+        "game_name": "Joker Coins Expanded",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad25622/alea_tad25622.webp",
+    },
+    {
+        "game_name": "Clover Coins 3x5",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad25620/alea_tad25620.webp",
+    },
+    {
+        "game_name": "Fortune Yuri 500",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad24812/alea_tad24812.webp",
+    },
+    {
+        "game_name": "Supernova",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad24515/alea_tad24515.webp",
+    },
+    {
+        "game_name": "Crown Of Fortune",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad22387/alea_tad22387.webp",
+    },
+    {
+        "game_name": "Joker's Fortune",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad22566/alea_tad22566.webp",
+    },
+    {
+        "game_name": "Mines Football",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad26379/alea_tad26379.webp",
+    },
+    {
+        "game_name": "Cash Stack",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad22385/alea_tad22385.webp",
+    },
+    {
+        "game_name": "Chicken Dash",
+        "game_image_url": "https://multi.bet.br//uploads/games/MUL//alea_tad24752/alea_tad24752.webp",
     },
 ]
 

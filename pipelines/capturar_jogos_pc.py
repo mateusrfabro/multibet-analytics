@@ -32,9 +32,10 @@ SECOES_IGNORAR = ["provedores de jogos", "providers", "game providers"]
 
 
 def fechar_popups(page):
+    # Seletores seguros: so buttons/icons de fechar modal (NUNCA links genericos)
     for seletor in ["button[aria-label='Close']", "button[aria-label='Fechar']",
                     "[class*='modal-close']", "[class*='popup-close']",
-                    "text=x", "text=X"]:
+                    "button[class*='close']"]:
         try:
             for el in page.query_selector_all(seletor):
                 if el.is_visible():
@@ -42,6 +43,7 @@ def fechar_popups(page):
                     time.sleep(0.3)
         except:
             pass
+    # Escape para fechar modais (nao navega)
     try:
         page.keyboard.press("Escape")
         time.sleep(0.3)
@@ -50,12 +52,24 @@ def fechar_popups(page):
 
 
 def scroll_completo(page):
+    # Aguarda body existir antes de scrollar
+    try:
+        page.wait_for_selector("body", timeout=10000)
+    except:
+        time.sleep(3)
     page.evaluate("window.scrollTo(0, 0)")
-    time.sleep(0.3)
-    while True:
+    time.sleep(0.5)
+    max_scrolls = 200
+    for _ in range(max_scrolls):
         page.evaluate("window.scrollBy(0, 700)")
         time.sleep(0.35)
-        if page.evaluate("window.scrollY + window.innerHeight >= document.body.scrollHeight"):
+        at_bottom = page.evaluate("""
+            () => {
+                if (!document.body) return true;
+                return window.scrollY + window.innerHeight >= document.body.scrollHeight;
+            }
+        """)
+        if at_bottom:
             break
     page.evaluate("window.scrollTo(0, 0)")
     time.sleep(0.5)
@@ -91,12 +105,19 @@ def coletar_urls_das_secoes(context, url_entrada):
     try:
         page.goto(url_entrada, timeout=120000)
         page.wait_for_load_state("domcontentloaded")
+        # Espera SPA Angular renderizar os game cards
+        try:
+            page.wait_for_selector("h2.lobby_group--title", timeout=20000)
+        except:
+            time.sleep(5)
+        time.sleep(3)
     except Exception as e:
         print(f"    Falha ao acessar {url_entrada}: {e}")
         page.close()
         return []
 
     time.sleep(2)
+
     fechar_popups(page)
     scroll_completo(page)
     time.sleep(1)
@@ -119,7 +140,11 @@ def coletar_urls_das_secoes(context, url_entrada):
         try:
             page.goto(url_entrada, timeout=120000)
             page.wait_for_load_state("domcontentloaded")
-            time.sleep(1.5)
+            try:
+                page.wait_for_selector("h2.lobby_group--title", timeout=15000)
+            except:
+                time.sleep(3)
+            time.sleep(2)
             fechar_popups(page)
             scroll_completo(page)
             time.sleep(0.5)
@@ -132,12 +157,12 @@ def coletar_urls_das_secoes(context, url_entrada):
                         let node = h2.parentElement;
                         for (let i = 0; i < 8; i++) {
                             if (!node) break;
-                            const btn = node.querySelector('.view-more-ct')
+                            const btn = node.querySelector('.view-more-cta')
                                      || node.querySelector('button.lobby_group--button');
                             if (btn) { btn.click(); return true; }
                             const parent = h2.parentElement;
                             if (parent) {
-                                const irmao = parent.querySelector('.view-more-ct');
+                                const irmao = parent.querySelector('.view-more-cta');
                                 if (irmao) { irmao.click(); return true; }
                             }
                             node = node.parentElement;
@@ -175,46 +200,53 @@ def coletar_urls_das_secoes(context, url_entrada):
 
 
 def coletar_jogos_da_pagina(page):
-    """Scroll completo + coleta todos os game-cards da pagina atual."""
-    scroll_completo(page)
+    """Scroll incremental ate nao carregar mais jogos (infinite scroll SPA)."""
+    # Espera game cards renderizarem (SPA Angular)
+    try:
+        page.wait_for_selector("div.game-card", timeout=15000)
+    except:
+        time.sleep(3)
     fechar_popups(page)
 
-    # Clica em "carregar mais" se existir
-    for _ in range(30):
-        botao = None
-        for sel in [".view-more-ct", "[class*='load-more']", "[class*='show-more']",
-                    "button:has-text('Carregar mais')", "button:has-text('Ver mais')"]:
-            try:
-                el = page.query_selector(sel)
-                if el and el.is_visible():
-                    botao = el
-                    break
-            except:
-                pass
-        if not botao:
-            break
-        botao.scroll_into_view_if_needed()
-        botao.click()
-        time.sleep(2)
-        fechar_popups(page)
-        try:
-            page.wait_for_load_state("networkidle", timeout=5000)
-        except:
-            pass
-        scroll_completo(page)
+    # Infinite scroll: scrolla ate nao ter mais jogos novos
+    last_count = 0
+    stable_rounds = 0
+    for _ in range(100):
+        page.evaluate("window.scrollBy(0, 800)")
+        time.sleep(0.4)
+        current = page.evaluate("document.querySelectorAll('div.game-card').length")
+        if current == last_count:
+            stable_rounds += 1
+            if stable_rounds >= 5:
+                break
+        else:
+            stable_rounds = 0
+            last_count = current
+
+    # Volta ao topo para coleta completa
+    page.evaluate("window.scrollTo(0, 0)")
+    time.sleep(0.5)
+
+    # Scroll novamente para forcar render de todos os cards lazy-loaded
+    for _ in range(50):
+        page.evaluate("window.scrollBy(0, 800)")
+        time.sleep(0.2)
 
     jogos = page.evaluate("""
         () => {
             const resultado = [];
             const vistos = new Set();
-            document.querySelectorAll('[class*="game-card"]').forEach(card => {
+            document.querySelectorAll('div.game-card').forEach(card => {
                 const img  = card.querySelector('img');
-                const h5   = card.querySelector('h5');
                 const src  = img ? (img.src || img.getAttribute('data-src') || '') : '';
-                const nome = h5  ? h5.innerText.trim() : (img ? img.alt : '');
-                if (src && nome && src.startsWith('http') && !vistos.has(src)) {
-                    vistos.add(src);
-                    resultado.push({ nome: nome.trim(), url: src });
+                let nome = img ? (img.alt || '').trim() : '';
+                if (!nome) {
+                    const h5 = card.querySelector('h5');
+                    if (h5) nome = h5.innerText.trim();
+                }
+                if (src && nome && src.startsWith('http') && !vistos.has(nome.toUpperCase())) {
+                    vistos.add(nome.toUpperCase());
+                    resultado.push({ nome: nome, url: src });
                 }
             });
             return resultado;
@@ -241,7 +273,11 @@ def main():
         try:
             page_nav.goto(URLS_ENTRADA[0], timeout=120000)
             page_nav.wait_for_load_state("domcontentloaded")
-            time.sleep(2)
+            try:
+                page_nav.wait_for_selector("h2.lobby_group--title", timeout=20000)
+            except:
+                time.sleep(5)
+            time.sleep(3)
             urls_descobertas = descobrir_urls_navegacao(page_nav)
             print(f"  {len(urls_descobertas)} URLs encontradas na navegacao")
         except:
@@ -289,6 +325,10 @@ def main():
             try:
                 page.goto(url, timeout=120000)
                 page.wait_for_load_state("domcontentloaded")
+                try:
+                    page.wait_for_selector("div.game-card", timeout=15000)
+                except:
+                    time.sleep(3)
                 time.sleep(2)
                 fechar_popups(page)
 
