@@ -54,11 +54,13 @@ SNAPSHOT_DATE = datetime.now(BRT).strftime("%Y-%m-%d")
 # Estrategia DELETE WHERE snapshot_date + INSERT — preserva historico para diff/backtest
 
 # Thresholds do rating NEW (novatos) — ver docs/proposta_pcr_rating_new_20260420.md
-# Jogador com menos de 14 dias ativos OU menos de 3 depositos totais e separado
+# Jogador com menos de 7 dias ativos OU menos de 2 depositos totais e separado
 # do ranking PVS pra evitar instabilidade estatistica da formula com n pequeno.
 # Aguardando aprovacao Raphael (CRM) + Castrin (Head) pra ativar push Smartico.
-NOVATO_DAYS_THRESHOLD = 14
-NOVATO_DEPOSITS_THRESHOLD = 3
+# Threshold ajustado em 21/04/2026: 14/3 -> 7/2 (resultado anterior classificava
+# 87% da base como NEW, inviabilizando a segmentacao).
+NOVATO_DAYS_THRESHOLD = 7
+NOVATO_DEPOSITS_THRESHOLD = 2
 
 # ============================================================
 # DDL — Tabela + View
@@ -236,32 +238,47 @@ def extrair_metricas_jogadores() -> pd.DataFrame:
     FROM player_metrics m
     LEFT JOIN ps_bi.dim_user u ON m.player_id = u.ecr_id
     LEFT JOIN (
-        -- Dedup deterministico: se houver multiplas linhas por c_ecr_id, pega a 1a por ordem de PK.
-        -- FIX auditoria 20/04/2026 (BO 3b/3c): antes era `ORDER BY c_category` (alfabetico),
-        -- que pegava sempre 'closed'/'fraud' para jogadores com historico misto.
-        -- Agora ordena por c_ecr_id (estavel, nao usa c_category como criterio).
+        -- Dedup deterministico: pega a linha MAIS RECENTE por c_category_updated_time.
+        -- FIX auditoria 21/04/2026: antes era `ORDER BY c_ecr_id DESC` (arbitrario,
+        -- podia pegar status desatualizado). Agora ordena pela data de mudanca de
+        -- status (c_category_updated_time), assim o c_category reflete o estado
+        -- atual do jogador (ex: real_user -> closed -> fraud pega 'fraud').
         SELECT c_ecr_id, c_category
         FROM (
             SELECT c_ecr_id, c_category,
-                   ROW_NUMBER() OVER (PARTITION BY c_ecr_id ORDER BY c_ecr_id DESC) AS rn
+                   ROW_NUMBER() OVER (
+                       PARTITION BY c_ecr_id
+                       ORDER BY c_category_updated_time DESC NULLS LAST, c_ecr_id DESC
+                   ) AS rn
             FROM bireports_ec2.tbl_ecr
         )
         WHERE rn = 1
     ) ecr_bi ON m.player_id = ecr_bi.c_ecr_id
-    -- FIX auditoria 20/04/2026 (critico #1): filtrar apenas real_user ANTES do ranking PVS.
-    -- Sem isso, 11.6% da base (fraud/closed/rg_closed/play_user) distorce percentis
-    -- e recebe tag PCR no Smartico (compliance issue com rg_closed).
     WHERE (u.is_test = false OR u.is_test IS NULL)
-      AND ecr_bi.c_category = 'real_user'
     """
 
     df = query_athena(sql, database="ps_bi")
-    log.info(f"  -> {len(df):,} jogadores extraidos")
+    log.info(f"  -> {len(df):,} jogadores extraidos (pre-filtro c_category)")
 
-    # Log distribuicao c_category
+    # Log breakdown completo ANTES do filtro (observabilidade A1 — 21/04/2026)
     if "c_category" in df.columns:
         cat_dist = df["c_category"].value_counts(dropna=False)
-        log.info(f"  -> c_category: {dict(cat_dist.head(10))}")
+        log.info("  -> Breakdown c_category (antes do filtro):")
+        for cat, qtd in cat_dist.items():
+            pct = qtd / len(df) * 100
+            log.info(f"       {str(cat):<20} {qtd:>8,} ({pct:>5.1f}%)")
+
+    # Filtro c_category = 'real_user' (decisao 21/04/2026, opcao A+logging):
+    # conservador, exclui fraud/closed/suspended/rg_closed do ranking PCR.
+    # Breakdown dos excluidos foi logado acima pra iterarmos depois se necessario.
+    antes = len(df)
+    df = df[df["c_category"] == "real_user"].copy()
+    depois = len(df)
+    excluidos = antes - depois
+    log.info(
+        f"  -> Filtro c_category='real_user': {depois:,} mantidos, "
+        f"{excluidos:,} excluidos ({excluidos/antes*100:.1f}%)"
+    )
 
     return df
 
@@ -279,9 +296,19 @@ def normalizar_percentil(series: pd.Series, inverter: bool = False) -> pd.Series
 
 def calcular_pvs(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Player Value Score (PVS) — 9 componentes ponderados (score 0-100):
-      +25 GGR | +15 Deposito | +12 Recencia | +10 Margem | +10 Num Deps
-      +8 Dias Ativos | +5 Mix Produto | +5 Taxa Atividade | -10 Bonus Pen
+    Player Value Score (PVS) v2.0 — rebalanceado 21/04/2026 apos validacao empirica.
+
+    Pesos v2.0 (foco em VALOR absoluto, reduz peso de engajamento):
+      +40 GGR | +25 Deposito | +12 Recencia | +5 Num Deps
+      +3 Dias Ativos | +3 Mix Produto | +2 Taxa Atividade | -15 Bonus Pen
+      (score_margem removido — introduzia ruido, margem alta nao e proxy de valor)
+
+    Motivo da v2.0 (evidencia empirica 21/04/2026):
+      - v1: top 20 GGR tinha overlap de 2-6/20 com top 20 PVS
+      - Whales reais (GGR R$60-160K) estavam em A/B em vez de S
+      - Top PVS eram jogadores MISTO de alta frequencia com GGR R$1-6K
+      - Causa: 45% do peso em engajamento (margem/dias/num_dep/atividade/mix)
+      - Fix: 65% do peso em valor direto (GGR 40 + Deposito 25)
     """
     log.info("Calculando Player Value Score (PVS)...")
     result = df.copy()
@@ -295,7 +322,11 @@ def calcular_pvs(df: pd.DataFrame) -> pd.DataFrame:
         result["ggr_total"] / result["turnover_total"],
         0,
     )
-    result["score_margem"] = normalizar_percentil(result["margem_ggr"], inverter=True)
+    # 21/04/2026: removido inverter=True (bug semantico confirmado empiricamente).
+    # Margem = GGR/turnover = % do apostado que vira receita da casa. Maior margem
+    # = casa ganha mais do jogador = MELHOR pra MultiBet, portanto score maior.
+    # Antes, com inverter=True, top PVS x top GGR tinha overlap de 2/20 jogadores.
+    result["score_margem"] = normalizar_percentil(result["margem_ggr"])
     result["score_num_dep"] = normalizar_percentil(result["num_deposits"])
     result["score_dias_ativos"] = normalizar_percentil(result["days_active"])
 
@@ -315,16 +346,17 @@ def calcular_pvs(df: pd.DataFrame) -> pd.DataFrame:
     )
     result["score_bonus_pen"] = normalizar_percentil(result["bonus_ratio"])
 
+    # PVS v2.0 (21/04/2026) — rebalanceado: valor absoluto domina o ranking
     result["pvs"] = (
-        result["score_ggr"] * 0.25
-        + result["score_deposit"] * 0.15
-        + result["score_recencia"] * 0.12
-        + result["score_margem"] * 0.10
-        + result["score_num_dep"] * 0.10
-        + result["score_dias_ativos"] * 0.08
-        + result["score_mix"] * 0.05
-        + result["score_atividade"] * 0.05
-        - result["score_bonus_pen"] * 0.10
+        result["score_ggr"]        * 0.40   # valor direto pra casa
+        + result["score_deposit"]  * 0.25   # volume financeiro
+        + result["score_recencia"] * 0.12   # recencia (mantido)
+        + result["score_num_dep"]  * 0.05   # frequencia (reduzido)
+        + result["score_mix"]      * 0.03   # produto MISTO (reduzido)
+        + result["score_dias_ativos"] * 0.03  # engajamento (reduzido)
+        + result["score_atividade"]   * 0.02  # taxa (reduzido)
+        - result["score_bonus_pen"]   * 0.15  # penalidade farmers (aumentada)
+        # score_margem REMOVIDO — margem alta nao e proxy de valor (validado 21/04)
     ).clip(0, 100)
 
     log.info(
@@ -338,7 +370,7 @@ def calcular_pvs(df: pd.DataFrame) -> pd.DataFrame:
 def atribuir_rating(df: pd.DataFrame) -> pd.DataFrame:
     """
     Rating PCR escala E-S + NEW (v1.3):
-      NEW = novatos (days_active < 14 OU num_deposits < 3) — fora do ranking PVS
+      NEW = novatos (days_active < 7 E num_deposits < 2) — fora do ranking PVS
       E   = Bottom 25% dos maduros
       D   = 25-50%
       C   = 50-75%
@@ -357,16 +389,19 @@ def atribuir_rating(df: pd.DataFrame) -> pd.DataFrame:
     result = df.copy()
 
     # Separa novatos ANTES do ranking PVS
+    # 21/04/2026: OR -> AND (validacao empirica mostrou OR pegando whales intensos
+    # com 128 deps/6 dias ativos como "NEW" e casuais low-dep de longa permanencia.
+    # AND pega novatos puros: pouco tempo + poucos depositos simultaneamente).
     eh_novato = (
         (result["days_active"] < NOVATO_DAYS_THRESHOLD)
-        | (result["num_deposits"] < NOVATO_DEPOSITS_THRESHOLD)
+        & (result["num_deposits"] < NOVATO_DEPOSITS_THRESHOLD)
     )
     qtd_novatos = int(eh_novato.sum())
     qtd_maduros = int((~eh_novato).sum())
     log.info(
         f"  NEW (novatos): {qtd_novatos:,} "
         f"({qtd_novatos/len(result)*100:.1f}% da base) "
-        f"| days_active < {NOVATO_DAYS_THRESHOLD} OR num_deposits < {NOVATO_DEPOSITS_THRESHOLD}"
+        f"| days_active < {NOVATO_DAYS_THRESHOLD} AND num_deposits < {NOVATO_DEPOSITS_THRESHOLD}"
     )
     log.info(f"  Maduros (entram no ranking PVS): {qtd_maduros:,}")
 

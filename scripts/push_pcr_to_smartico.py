@@ -88,7 +88,16 @@ RATING_TO_SMARTICO: Dict[str, str] = {
     "NEW": "PCR_RATING_NEW",  # v1.3 (20/04/2026) — novatos fora do ranking PVS
 }
 
-TAG_PREFIX_PATTERN = "PCR_RATING_*"  # usado no ^core_external_markers
+# v1.5 (22/04/2026): rating PCR vai para Custom Property dedicada ao inves de
+# bucket de tags (markers/segment). Raphael (CRM Lead) reservou o slot
+# core_custom_prop1 para o PCR no tenant Multibet. Vantagens:
+#   * Semanticamente correto: cada jogador tem 1 rating (nao array)
+#   * Zero colisao com outros sistemas (cada sistema ganha 1 prop dedicada)
+#   * Query Builder mais limpo: `core_custom_prop1 = 'PCR_RATING_S'`
+#   * Automation trigger direto: "quando core_custom_prop1 muda de valor"
+PCR_CUSTOM_PROP = "core_custom_prop1"
+
+TAG_PREFIX_PATTERN = "PCR_RATING_*"  # legado, nao mais usado em push
 
 # ---------------------------------------------------------------------------
 # Shadow mode do rating NEW (v1.3, 20/04/2026)
@@ -330,57 +339,38 @@ def build_events(
     """
     Monta 1 evento update_profile por jogador.
 
-    Estrategia (21/04/2026 — PCR v1.4: core_external_segment):
-      Tags de rating comportamental (PCR_RATING_*) agora sao publicadas no
-      bucket `core_external_segment`, separado das tags operacionais em
-      `core_external_markers` (como Matriz de Risco). Alinhamento feito com
-      Raphael (CRM): segmentos comportamentais devem ficar no bucket
-      `core_external_segment` para facilitar configuracao de automations
-      especificas de PCR no painel Smartico.
+    Estrategia (22/04/2026 — PCR v1.5: core_custom_prop1):
+      Rating PCR e publicado em uma Custom Property dedicada do Smartico
+      (slot `core_custom_prop1`, reservado pelo Raphael do CRM). Custom
+      properties sao campos string unicos (1 valor por prop), alinhadas
+      semanticamente com o fato de que cada jogador tem exatamente 1
+      rating por vez.
 
-      - Se o jogador TEM rating anterior diferente (previous_players):
-          -core_external_segment: [tag_antiga]  (remove exata)
-          +core_external_segment: [tag_nova]
-      - Senao (baseline ou sem mudanca):
-          +core_external_segment: [tag_atual]   (so add)
+      Comportamento:
+        * Substitui o valor anterior (REPLACE, sem operador +/-/^)
+        * Se o jogador mudou de rating, basta mandar o novo valor
+        * Se o rating nao mudou, o diff filtra o jogador antes de chegar
+          aqui (em load_current_and_previous_snapshots + diff_players)
 
-    Motivo tecnico (mantido da v1.3): operador ^core_external_segment:["PCR_RATING_*"]
-    engole o evento inteiro (pd:0) quando o pattern nao matcha nada no perfil.
-    Validado em 20/04/2026 com os 9 falsos-sucessos da Fase 2 (quando tags ainda
-    estavam em core_external_markers). Usar -remove com tag especifica resolve.
-
-    Nota migracao: se jogador ainda tem tag PCR_RATING_* em core_external_markers
-    (push anterior v1.2 no bucket errado), rodar scripts/migrate_pcr_markers_to_segment.py
-    ANTES de rodar este push — limpa markers e popula segment em operacao atomica.
+    Nota migracao (paralelo): se jogador ainda tem tag PCR_RATING_* em
+    core_external_markers ou core_external_segment (pushes anteriores
+    v1.2 / v1.4), rodar scripts/migrate_pcr_to_custom_prop.py — limpa os
+    2 buckets antigos e seta core_custom_prop1 em operacao atomica.
     """
     events: List[SmarticoEvent] = []
-    previous_players = previous_players or {}
+    _ = previous_players or {}  # diff ja foi aplicado upstream
     for p in players:
         tag = p.smartico_tag()
         if not tag:
             log.debug("Pulando %s: rating %s sem mapeamento", p.user_ext_id, p.rating)
             continue
 
-        prev = previous_players.get(p.user_ext_id)
-        old_tag: Optional[str] = None
-        if prev is not None and prev.rating != p.rating:
-            old_tag = prev.smartico_tag()
-
-        if old_tag:
-            # Mudou de rating: remove a tag antiga especificamente + adiciona a nova
-            ev = client.build_external_segment_event(
-                user_ext_id=p.user_ext_id,
-                remove_tags=[old_tag],
-                add_tags=[tag],
-                skip_cjm=skip_cjm,
-            )
-        else:
-            # Baseline ou sem mudanca: so add (evita bug do ^ com pattern vazio)
-            ev = client.build_external_segment_event(
-                user_ext_id=p.user_ext_id,
-                add_tags=[tag],
-                skip_cjm=skip_cjm,
-            )
+        ev = client.build_custom_property_event(
+            user_ext_id=p.user_ext_id,
+            prop_name=PCR_CUSTOM_PROP,
+            value=tag,
+            skip_cjm=skip_cjm,
+        )
         events.append(ev)
     return events
 
