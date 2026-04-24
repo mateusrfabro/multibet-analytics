@@ -13,11 +13,18 @@ Contas MultiBet BRL configuradas no .env:
 Estrategia: DELETE periodo+fonte + INSERT (incremental, idempotente)
 
 Execucao:
-    python pipelines/sync_meta_spend.py                # ultimos 7 dias
-    python pipelines/sync_meta_spend.py --days 30      # ultimos 30 dias
+    python pipelines/sync_meta_spend.py                # ultimos 7 dias ate HOJE (D-0)
+    python pipelines/sync_meta_spend.py --days 2       # intraday D-0 + D-1 (cron 5x/dia)
     python pipelines/sync_meta_spend.py --days 90      # carga historica
 
-Agendamento sugerido: rodar diariamente apos meia-noite (BRT) com --days 3
+Janela: inclui D-0 (hoje) por padrao. Meta atualiza insights near-real-time
+(~15min delay). Rodar varias vezes ao dia mantem dados frescos — DELETE+INSERT
+sobrescreve a mesma janela de forma idempotente.
+
+Agendamento sugerido no orquestrador:
+    - Refresh token:  0 5 1 * *    (dia 1 de cada mes, 02:00 BRT)
+    - Intraday 5x:    0 9,13,17,21,1 * * *  (06h/10h/14h/18h/22h BRT)
+                      com --days 2 pra D-0 + D-1
 """
 
 import sys
@@ -119,10 +126,13 @@ def sync(days: int = 7):
     # 0. Sanity check do token (loga warning/error mas nao aborta)
     _check_token_expiration()
 
-    end_date = date.today() - timedelta(days=1)  # D-1
+    # Janela inclui HOJE (D-0) por default — Meta expoe insights near-real-time
+    # (delay ~15min). Rodar 4-5x/dia mantem D-0 fresco via DELETE+INSERT idempotente.
+    # Usar --days 2 pra cobrir D-1 + D-0; --days 3 pra cobrir ate D-2 (reprocessamentos).
+    end_date = date.today()
     start_date = end_date - timedelta(days=days - 1)
 
-    log.info(f"Periodo: {start_date} a {end_date} ({days} dias)")
+    log.info(f"Periodo: {start_date} a {end_date} ({days} dias, inclui D-0 intraday)")
 
     # 1. Buscar dados da API
     rows = get_campaign_spend(start_date=start_date, end_date=end_date)
