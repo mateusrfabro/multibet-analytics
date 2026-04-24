@@ -115,6 +115,35 @@ Sempre incluir filtro temporal antes de outros predicados — evita Full Scan no
 - Preferir as camadas pré-agregadas (`ps_bi`) quando disponíveis, em vez dos `_ec2` brutos
 - Usar `LIMIT` durante desenvolvimento/testes para não escanear tabelas inteiras
 
+## Padrão de troca de dados com IA (CSV-first)
+
+Quando passar **dados tabulares/estruturados repetitivos** dentro de
+prompts, contexto ou arquivos que um agente de IA vai consumir,
+**preferir CSV sobre JSON**. CSV reduz drasticamente o consumo de
+tokens (JSON repete chaves em cada objeto), é **100% universal**
+(qualquer LLM interpreta sem erro de parse) e não aposta em formato
+emergente/não-maduro.
+
+**Regra de decisão — "quem vai consumir?"**
+- **Claude / subagente / racional interno de IA** → CSV (quando tabular homogêneo)
+- **Humano (Castrin, Mauro, Gusta, CTO, CGO) / ferramenta / API / banco** → CSV/Excel com legenda (padrão atual) ou JSON quando é contrato técnico
+
+**Usar CSV em contexto de IA:** resultado de query passado pro Claude
+analisar (top N jogadores, lista affiliates, amostra transações),
+arrays homogêneos pra subagentes (extractor, auditor, researcher),
+arquivos intermediários de pipeline de IA.
+
+**Manter JSON:** APIs/integrações (Flask, Smartico, Meta/Google Ads),
+configs versionadas, estruturas aninhadas/heterogêneas que não cabem
+em tabela, contratos técnicos entre sistemas.
+
+**Nota sobre TOON:** avaliado em 20/04/2026 e descartado — ganho
+marginal sobre CSV, formato emergente sem massa de treinamento em
+LLMs (risco de erro silencioso de parse). Reavaliar se virar padrão
+consolidado.
+
+Detalhe: `memory/feedback_csv_first_contexto_llm.md` (20/04/2026).
+
 ## Padrão de entrega (OBRIGATÓRIO)
 Toda entrega de dados (CSV, Excel, report) DEVE incluir uma **legenda/dicionário**:
 - **O que cada coluna significa** — nome, tipo, unidade (BRL, %, dias, etc.)
@@ -130,6 +159,41 @@ Formatos aceitos:
 
 Nenhuma entrega deve gerar dúvida. Se alguém precisa perguntar "o que é isso?",
 a entrega falhou.
+
+## Fluxo de Deploy EC2 (OBRIGATÓRIO — nunca esquecer)
+
+**Regra inviolável:** commit/push no git ANTES de qualquer alteração na EC2.
+Nunca editar direto em produção.
+
+### Ordem correta (obrigatória)
+1. **Editar local** (pasta do projeto no Windows)
+2. **Testar local** (rodar pipeline no ambiente de dev)
+3. **`git add` + `git commit` + `git push`** no repo do time
+   (`GL-Analytics-M-L/<repo>` correspondente)
+4. **Deploy** para EC2 via script `ec2_deploy/deploy_*.sh` ou `scp`
+5. **Smoke test** empírico na EC2 (rodar manual, conferir logs)
+6. **Só após isso** considerar a task entregue
+
+### O que NÃO fazer (nunca)
+- SSH + `nano`/`vim` direto em arquivo de pipeline na EC2
+- Aplicar hotfix em produção e "depois subir pro git"
+- Criar backup `.bak` na EC2 que não está versionado no git
+- Considerar entrega concluída sem ter sincronizado git + EC2
+
+### Versões múltiplas / backups
+Ao encontrar múltiplas versões (ex: `grandes_ganhos.py`,
+`grandes_ganhos.py.bak_20260415_093737`, `.bak_20260416_172257`):
+- Versão SEM sufixo `.bak` = **vigente em produção**
+- Versões `.bak_YYYYMMDD_HHMM` = **histórico, preservar**
+- **Todas** entram no git (vigente + backups) para rastreabilidade e rollback
+- Nunca apagar `.bak_*` sem confirmar que está no git
+
+> Formalizado em 16/04/2026 após descoberta de 3 backups de
+> `grandes_ganhos.py` na EC2 sem histórico equivalente no git.
+> Regra já era do Mauro ("sobe no git primeiro, depois EC2"),
+> agora oficializada.
+> Detalhes: `memory/feedback_git_first_then_ec2_deploy.md` e
+> `memory/feedback_versao_mais_recente_vigente.md`
 
 ## Meu objetivo com cada entrega
 Quero ser reconhecido pelo time, mostrar capacidade de gestão e crescer

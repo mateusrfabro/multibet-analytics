@@ -38,11 +38,11 @@ A Matriz de Risco classifica **100% da base de jogadores** (excluindo test users
 ## Formula de Normalizacao
 
 ```
-score_norm = (score_bruto + 25) / 50 * 100
+score_norm = (score_bruto + 35) / 85 * 100
 ```
 
 - Limitado entre **0** e **100**
-- P05 empirico = **-25** | P95 empirico = **+25** | Range = **50**
+- P05 empirico = **-35** | P95 empirico = **+50** | Range = **85**
 - Pior caso teorico: **-90** | Melhor caso teorico: **+166**
 
 ---
@@ -488,9 +488,9 @@ score_norm = (score_bruto + 25) / 50 * 100
 |---|---|
 | **Melhor caso** | +166 (todas as tags positivas) |
 | **Pior caso** | -90 (todas as tags negativas) |
-| **P05 empirico** | -25 |
-| **P95 empirico** | +25 |
-| **Range de normalizacao** | 50 pontos |
+| **P05 empirico** | -35 |
+| **P95 empirico** | +50 |
+| **Range de normalizacao** | 85 pontos |
 
 ### Composicao por Tipo
 
