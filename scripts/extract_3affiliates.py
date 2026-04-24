@@ -6,7 +6,7 @@ import sys, os, logging, warnings
 import pandas as pd
 from datetime import datetime
 
-sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/MultiBet")
+sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet")
 from db.athena import query_athena
 from db.bigquery import query_bigquery
 warnings.filterwarnings("ignore")
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger(__name__)
 
 AFFS = {"532570": "Oferta Mini Games", "532571": "ODD Obvia", "464673": "Meta White"}
-OUT = "c:/Users/NITRO/OneDrive - PGX/MultiBet/reports/affiliates_3ids_FINAL.xlsx"
+OUT = "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/reports/affiliates_3ids_FINAL.xlsx"
 all_sheets = {}
 
 for aff_id, aff_name in AFFS.items():

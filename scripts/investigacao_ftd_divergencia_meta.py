@@ -18,7 +18,7 @@ QUERIES DE DIAGNOSTICO:
 5. BigQuery — Verificar se existe campo acc_first_deposit_date
 """
 import sys
-sys.path.insert(0, r"c:\Users\NITRO\OneDrive - PGX\MultiBet")
+sys.path.insert(0, r"c:\Users\NITRO\OneDrive - PGX\Projetos - Super Nova\MultiBet")
 
 from db.athena import query_athena
 from db.bigquery import query_bigquery

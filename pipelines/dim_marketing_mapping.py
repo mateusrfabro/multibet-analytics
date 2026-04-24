@@ -328,7 +328,7 @@ def generate_unmapped_report():
     log.info(f"  GGR Unmapped: R$ {ggr_unmapped:,.2f} ({pct_unmapped:.1f}% do total)")
 
     # Salvar Excel
-    out_dir = "c:/Users/NITRO/OneDrive - PGX/MultiBet/output"
+    out_dir = "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/output"
     os.makedirs(out_dir, exist_ok=True)
     hoje = date.today().strftime("%Y-%m-%d")
     out_file = f"{out_dir}/unmapped_trackers_para_marketing_{hoje}.xlsx"

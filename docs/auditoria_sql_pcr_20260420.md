@@ -376,11 +376,11 @@ Valeu auditar? **Sim, valeu muito.** Encontrei **3 achados Criticos** e 6 Medios
 4. Medios — mediana na view, escala doc, cortes fixos PVS (pode ir pra sprint normal)
 
 Arquivos relevantes:
-- Relatorio: `c:/Users/NITRO/OneDrive - PGX/MultiBet/docs/auditoria_sql_pcr_20260420.md`
-- Pipeline auditado: `c:/Users/NITRO/OneDrive - PGX/MultiBet/pipelines/pcr_pipeline.py`
-- Push auditado: `c:/Users/NITRO/OneDrive - PGX/MultiBet/scripts/push_pcr_to_smartico.py`
-- Script legado (considerar deprecar): `c:/Users/NITRO/OneDrive - PGX/MultiBet/scripts/pcr_scoring.py`
-- Deploy: `c:/Users/NITRO/OneDrive - PGX/MultiBet/ec2_deploy/deploy_pcr_pipeline.sh`
+- Relatorio: `c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/docs/auditoria_sql_pcr_20260420.md`
+- Pipeline auditado: `c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/pipelines/pcr_pipeline.py`
+- Push auditado: `c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/scripts/push_pcr_to_smartico.py`
+- Script legado (considerar deprecar): `c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/scripts/pcr_scoring.py`
+- Deploy: `c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/ec2_deploy/deploy_pcr_pipeline.sh`
 
 ## Veredicto
 

@@ -13,7 +13,7 @@ Uso:
 """
 import sys
 import os
-sys.path.insert(0, r"c:\Users\NITRO\OneDrive - PGX\MultiBet")
+sys.path.insert(0, r"c:\Users\NITRO\OneDrive - PGX\Projetos - Super Nova\MultiBet")
 os.environ["PYTHONIOENCODING"] = "utf-8"
 
 from db.athena import query_athena

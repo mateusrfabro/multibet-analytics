@@ -30,7 +30,7 @@ from decimal import Decimal
 
 import pandas as pd
 
-sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/MultiBet")
+sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet")
 
 from db.bigquery import query_bigquery
 from db.redshift import query_redshift

@@ -12,7 +12,7 @@ Uso:
     python scripts/extract_affiliates_report.py 2026-04-06   # data especifica
 """
 import sys
-sys.path.insert(0, r"c:\Users\NITRO\OneDrive - PGX\MultiBet")
+sys.path.insert(0, r"c:\Users\NITRO\OneDrive - PGX\Projetos - Super Nova\MultiBet")
 
 from db.athena import query_athena
 from datetime import datetime, timedelta

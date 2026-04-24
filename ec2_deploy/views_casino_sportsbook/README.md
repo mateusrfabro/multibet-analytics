@@ -68,7 +68,7 @@ Se faltar qualquer um, o smoke test do deploy vai falhar claramente.
 ```bash
 # 1. Do PC local, copiar esta pasta inteira pra EC2
 scp -i etl-key.pem -r \
-    "c:/Users/NITRO/OneDrive - PGX/MultiBet/ec2_deploy/views_casino_sportsbook" \
+    "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/ec2_deploy/views_casino_sportsbook" \
     ec2-user@54.197.63.138:/home/ec2-user/multibet/
 
 # 2. SSH na EC2

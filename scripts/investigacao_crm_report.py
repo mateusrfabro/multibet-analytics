@@ -11,7 +11,7 @@ import json
 import traceback
 from datetime import datetime
 
-sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/MultiBet")
+sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet")
 
 # ============================================================
 # HELPERS

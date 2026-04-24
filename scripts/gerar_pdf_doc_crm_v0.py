@@ -415,7 +415,7 @@ def gerar():
     )
 
     # === SALVAR ===
-    out = "c:/Users/NITRO/OneDrive - PGX/MultiBet/docs/documentacao_dashboard_crm_v0.pdf"
+    out = "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/docs/documentacao_dashboard_crm_v0.pdf"
     pdf.output(out)
     print(f"PDF gerado: {out}")
     print(f"Paginas: {pdf.pages_count}")

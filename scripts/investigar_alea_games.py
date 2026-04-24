@@ -7,7 +7,7 @@ padrões de CDN/image_url dos provedores:
   - ALEA_SPRIBE   (AVIATOR)
 """
 import sys
-sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/MultiBet")
+sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet")
 
 from db.redshift import query_redshift
 

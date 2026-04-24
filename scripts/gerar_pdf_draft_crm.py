@@ -7,7 +7,7 @@ Uso:
 """
 
 import sys
-sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/MultiBet")
+sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet")
 
 from fpdf import FPDF
 
@@ -700,7 +700,7 @@ def gerar_pdf():
     )
 
     # --- SALVAR ---
-    output = "c:/Users/NITRO/OneDrive - PGX/MultiBet/docs/draft_report_crm_diario.pdf"
+    output = "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/docs/draft_report_crm_diario.pdf"
     pdf.output(output)
     print(f"PDF gerado com sucesso: {output}")
     print(f"  Paginas: {pdf.pages_count}")

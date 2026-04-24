@@ -4,7 +4,7 @@ Fonte: fund_ec2 (real-time) + ps_bi.dim_user + multibet.matriz_risco
 """
 
 import sys
-sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/MultiBet")
+sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet")
 
 from db.athena import query_athena
 from db.supernova import get_supernova_connection
@@ -260,7 +260,7 @@ report = "\n".join(R)
 print(report)
 
 # Salvar
-path = "c:/Users/NITRO/OneDrive - PGX/MultiBet/reports/report_promo_deposite_ganhe_25mar.txt"
+path = "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/reports/report_promo_deposite_ganhe_25mar.txt"
 with open(path, "w", encoding="utf-8") as f:
     f.write(report)
 print(f"\nSalvo em: {path}")

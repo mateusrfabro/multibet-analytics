@@ -5,7 +5,7 @@ Fontes: ps_bi + ecr_ec2 + bireports_ec2 (Athena)
 """
 import sys, os, logging
 from datetime import datetime
-sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/MultiBet")
+sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet")
 from db.athena import query_athena
 import pandas as pd
 
@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 log = logging.getLogger(__name__)
 
 AFF = "532570"
-OUT = "c:/Users/NITRO/OneDrive - PGX/MultiBet/reports/affiliate_532570_FINAL.xlsx"
+OUT = "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/reports/affiliate_532570_FINAL.xlsx"
 
 SQL_INFO = f"""
 SELECT CAST(c_affiliate_id AS VARCHAR) AS affiliate_id,

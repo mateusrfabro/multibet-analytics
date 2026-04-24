@@ -6,7 +6,7 @@ Investiga:
 3. Depositos totais por affiliate
 """
 import sys
-sys.path.insert(0, r"c:\Users\NITRO\OneDrive - PGX\MultiBet")
+sys.path.insert(0, r"c:\Users\NITRO\OneDrive - PGX\Projetos - Super Nova\MultiBet")
 
 from db.athena import query_athena
 from db.bigquery import query_bigquery

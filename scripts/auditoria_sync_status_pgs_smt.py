@@ -21,7 +21,7 @@ import logging
 import pandas as pd
 from datetime import datetime
 
-sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/MultiBet")
+sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet")
 from db.athena import query_athena
 from db.bigquery import query_bigquery
 
@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 DATA_INICIO = "2026-03-21"  # sabado
 DATA_FIM = "2026-03-25"     # exclusivo (ate fim do dia 24/03)
 ts = datetime.now().strftime("%Y%m%d_%H%M")
-output_dir = "c:/Users/NITRO/OneDrive - PGX/MultiBet/reports/"
+output_dir = "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/reports/"
 output_file = f"{output_dir}auditoria_sync_status_pgs_smt_FINAL_{ts}.xlsx"
 
 # Mapeamento esperado: c_category (PGS) -> core_account_status (SMT internal)

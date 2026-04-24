@@ -339,7 +339,7 @@ def etapa5_excel(df_orphans, df_suspicious):
     log.info("ETAPA 5: Gerando Excel para Marketing")
     log.info("=" * 70)
 
-    out_dir = "c:/Users/NITRO/OneDrive - PGX/MultiBet/output"
+    out_dir = "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/output"
     os.makedirs(out_dir, exist_ok=True)
     out_file = f"{out_dir}/mapeamento_marketing_canonical_{HOJE}.xlsx"
 

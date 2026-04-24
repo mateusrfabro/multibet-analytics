@@ -353,7 +353,7 @@ def main():
                 vistos.add(chave)
                 todos_jogos.append(j)
 
-    arquivo_csv = "c:/Users/NITRO/OneDrive - PGX/MultiBet/pipelines/jogos.csv"
+    arquivo_csv = "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/pipelines/jogos.csv"
     if not todos_jogos:
         print("\n  ATENCAO: 0 jogos capturados. CSV NAO foi sobrescrito.")
         return

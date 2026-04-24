@@ -3,7 +3,7 @@ Extrator: numeros do dashboard para 20/03/2026.
 Executa 4 queries no Athena e imprime resultados reais.
 """
 import sys
-sys.path.insert(0, r"c:\Users\NITRO\OneDrive - PGX\MultiBet")
+sys.path.insert(0, r"c:\Users\NITRO\OneDrive - PGX\Projetos - Super Nova\MultiBet")
 
 from db.athena import query_athena
 import traceback

@@ -8,7 +8,7 @@ Compara: Hoje vs D-1 (24/03) vs D-7 (18/03) vs média últimos 7 dias
 """
 
 import sys
-sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/MultiBet")
+sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet")
 
 import pandas as pd
 from datetime import date

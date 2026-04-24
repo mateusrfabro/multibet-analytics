@@ -19,7 +19,7 @@ Correcoes validadas com arquiteto (18/03/2026):
 """
 
 import sys
-sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/MultiBet")
+sys.path.insert(0, "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet")
 
 from db.athena import query_athena
 from db.supernova import execute_supernova, get_supernova_connection
@@ -183,7 +183,7 @@ def main():
 
     # 5. Excel backup
     out_dir = (
-        "c:/Users/NITRO/OneDrive - PGX/MultiBet/"
+        "c:/Users/NITRO/OneDrive - PGX/Projetos - Super Nova/MultiBet/"
         "Solicitacoes Pontuais/Solicitacao de Produtos/"
         "Cruzamento de Dados e Analise/out"
     )

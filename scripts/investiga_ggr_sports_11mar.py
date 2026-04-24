@@ -15,7 +15,7 @@ Timestamps em UTC → BRT: 11/03 BRT = UTC 2026-03-11 03:00:00 a 2026-03-12 03:0
 """
 
 import sys
-sys.path.insert(0, r"C:\Users\NITRO\OneDrive - PGX\MultiBet")
+sys.path.insert(0, r"C:\Users\NITRO\OneDrive - PGX\Projetos - Super Nova\MultiBet")
 
 import pandas as pd
 from db.redshift import query_redshift
