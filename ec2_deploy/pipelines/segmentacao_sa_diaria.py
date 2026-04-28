@@ -1065,14 +1065,11 @@ def main():
             n_total = len(sa)
             n_s = (sa["rating"] == "S").sum()
             n_a = (sa["rating"] == "A").sum()
-            ggr_total = sa["ggr_total"].astype(float).sum()
             comentario = (
-                f"*Segmentacao A+S diaria — {SNAPSHOT_DATE}*\n"
-                f"• Total: *{n_total:,}* jogadores ({n_s:,} S + {n_a:,} A)\n"
-                f"• GGR 90d desta base: *R$ {ggr_total:,.0f}*\n"
-                f"• 57 colunas | janelas 30d (gatilhos) + 90d (baseline PCR)\n"
-                f"_Detalhes das colunas no arquivo *_legenda.txt em anexo._"
-            )
+                f"*Segmentacao A+S — {SNAPSHOT_DATE}*\n"
+                f"{n_total:,} jogadores  |  S: {n_s:,}  |  A: {n_a:,}\n\n"
+                f"_Anexos: CSV + Legenda._"
+            ).replace(",", ".")
             ok = enviar_arquivos_slack(
                 arquivos=[str(csv_path), str(legenda_path)],
                 comentario=comentario,
