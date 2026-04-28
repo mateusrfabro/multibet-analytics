@@ -1,7 +1,7 @@
 # MANIFEST — Pipelines do MultiBet no Orquestrador
 
 > Fonte única de verdade do estado esperado dos pipelines que a pasta `ec2_deploy/` empacota.
-> Atualizado em 2026-04-24.
+> Atualizado em 2026-04-28.
 
 Esta pasta contém **o código + scripts de deploy** dos pipelines que alimentam o Super Nova DB e dashboards. O orquestrador (Prefect, 3.87.109.131) deve agendar estes pipelines conforme a cadência abaixo.
 
@@ -19,6 +19,10 @@ Esta pasta contém **o código + scripts de deploy** dos pipelines que alimentam
 | 8 | `game_image_mapping` (v4) | `30 2 * * *` (antes do Grandes Ganhos) | via `deploy_game_enrich_v4.sh` | `multibet.game_image_mapping` | Athena catálogo |
 | 9 | `pcr_pipeline` | `30 6 * * *` (03:30 BRT) | `python3 pipelines/pcr_pipeline.py` | `multibet.pcr_ratings` | Athena `ps_bi.fct_player_activity_daily`, `dim_user` |
 | 10 | `views_casino_sportsbook` | `30 7 * * *` (04:30 BRT) | `python3 views_casino_sportsbook/run_views_casino_sportsbook.sh` | 7 views gold Casino+SB | Athena |
+| 11 | `segmentacao_sa_diaria` | `0 7 * * *` (04:00 BRT, 30min após PCR) | `bash run_segmentacao_sa.sh` (já com `--push-smartico --smartico-confirm`) | `multibet.segmentacao_sa_diaria` (10k A+S, 79 col) + CSV+e-mail Castrin + Smartico API (PCR_RATING_* em `core_external_markers` para 136k) | `multibet.pcr_atual`, `multibet.matriz_risco`, `multibet.risk_tags`, `multibet.game_image_mapping`, Athena `ps_bi.*` + `ecr_ec2.tbl_ecr_kyc_level` |
+
+**DEPRECATED (retirar do orquestrador):**
+- `push_pcr_to_smartico` (linha removida) — consolidado dentro de `segmentacao_sa_diaria` na v2 (28/04/2026). Pipeline antigo subia em `core_custom_prop1`; nova versão sobe em `core_external_markers`.
 
 ## Checklist de ativação (Gusta)
 
