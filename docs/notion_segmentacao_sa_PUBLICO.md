@@ -26,7 +26,7 @@ Ela responde à pergunta: **"Quem são meus melhores jogadores hoje, e o que cad
 5. Enriquece com sinais de 30 dias, top jogos por tier, ciclo de vida e KYC.
 6. Persiste o snapshot histórico em banco relacional.
 7. Publica o CSV final + legenda explicativa.
-8. Envia por e-mail aos donos das ações de CRM.
+8. Publica em canal interno de distribuição com os donos das ações de CRM.
 9. Publica o rating do jogador como tag no perfil do CRM, pronta para uso em régua de campanhas (`PCR_RATING_S`, `PCR_RATING_A`, ..., `PCR_RATING_E`).
 ```
 
@@ -88,7 +88,7 @@ A escolha de **D-1** (excluir o dia atual) é deliberada: o dia em curso é semp
 
 O fluxo típico de uso é:
 
-1. **De manhã**, o operador recebe o CSV no e-mail.
+1. **De manhã**, o operador recebe o CSV pelo canal interno de distribuição.
 2. **Filtra** por critério da ação (ex: "S em tendência Caindo, status ativo, sem abuso de bônus, ciclo Em Risco").
 3. **Define a ação** (ex: bônus de reengajamento de R$ 100 com BTR esperado de 5x).
 4. **Importa a lista** no sistema de campanhas (CRM operacional).
