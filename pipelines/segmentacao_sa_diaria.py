@@ -482,11 +482,82 @@ def setup_tabelas():
     log.info("Garantindo schema/tabelas/views...")
     execute_supernova(DDL_SCHEMA)
     execute_supernova(DDL_SEGMENTACAO)
+    # Migracao v2: adiciona as 32 colunas novas em tabelas existentes (v1).
+    # CREATE TABLE IF NOT EXISTS nao altera schema de tabela existente,
+    # entao precisamos de ALTER TABLE explicito.
+    _migrar_schema_v2()
     for sql in DDL_INDEXES:
         execute_supernova(sql)
     execute_supernova(DDL_CELULA_MONITOR)
     execute_supernova(DDL_VIEW_ATUAL)
     log.info("  OK")
+
+
+def _migrar_schema_v2():
+    """
+    Idempotente: adiciona as 32 colunas v2 a `multibet.segmentacao_sa_diaria`
+    se nao existirem (PostgreSQL 9.6+).
+    """
+    cols_v2 = [
+        # Bloco 4
+        ("lifecycle_status",            "VARCHAR(15)"),
+        ("rg_status",                   "VARCHAR(15)"),
+        ("account_restricted_flag",     "SMALLINT"),
+        ("self_excluded_flag",          "SMALLINT"),
+        ("primary_vertical",            "VARCHAR(10)"),
+        ("product_mix",                 "VARCHAR(15)"),
+        # Bloco 6
+        ("kyc_status",                  "VARCHAR(20)"),
+        ("kyc_level",                   "VARCHAR(20)"),
+        ("self_exclusion_status",       "VARCHAR(30)"),
+        ("cool_off_status",             "VARCHAR(30)"),
+        ("restricted_product",          "VARCHAR(50)"),
+        # Bloco 5
+        ("bonus_abuse_flag",            "SMALLINT"),
+        # Bloco 1+2
+        ("ggr_30d",                     "NUMERIC(15,2)"),
+        ("ngr_30d",                     "NUMERIC(15,2)"),
+        ("deposit_amount_30d",          "NUMERIC(15,2)"),
+        ("deposit_count_30d",           "INTEGER"),
+        ("withdrawal_amount_30d",       "NUMERIC(15,2)"),
+        ("withdrawal_count_30d",        "INTEGER"),
+        ("avg_deposit_ticket_30d",      "NUMERIC(15,2)"),
+        ("avg_deposit_ticket_lifetime", "NUMERIC(15,2)"),
+        ("bet_amount_30d",              "NUMERIC(15,2)"),
+        ("bet_count_30d",               "BIGINT"),
+        ("avg_bet_ticket_30d",          "NUMERIC(15,4)"),
+        ("avg_deposit_ticket_tier",     "NUMERIC(15,2)"),
+        ("avg_bet_ticket_tier",         "NUMERIC(15,4)"),
+        # Bloco 3
+        ("top_provider_1",              "VARCHAR(60)"),
+        ("top_provider_2",              "VARCHAR(60)"),
+        ("top_game_1",                  "VARCHAR(120)"),
+        ("top_game_2",                  "VARCHAR(120)"),
+        ("top_game_1_tier_turnover",    "VARCHAR(120)"),
+        ("top_game_2_tier_turnover",    "VARCHAR(120)"),
+        ("top_game_3_tier_turnover",    "VARCHAR(120)"),
+        ("top_game_1_tier_rounds",      "VARCHAR(120)"),
+        ("top_game_2_tier_rounds",      "VARCHAR(120)"),
+        ("top_game_3_tier_rounds",      "VARCHAR(120)"),
+        ("dominant_weekday",            "VARCHAR(10)"),
+        ("dominant_timebucket",         "VARCHAR(15)"),
+        ("last_product_played",         "VARCHAR(15)"),
+        # Bloco 5b
+        ("bonus_issued_30d",            "NUMERIC(15,2)"),
+        ("btr_30d",                     "NUMERIC(8,4)"),
+        ("btr_casino_30d",              "NUMERIC(8,4)"),
+        ("btr_sport_30d",               "NUMERIC(8,4)"),
+        ("bonus_dependency_ratio_lifetime", "NUMERIC(8,4)"),
+        ("ngr_per_bonus_real_30d",      "NUMERIC(15,4)"),
+        ("last_bonus_date",             "DATE"),
+        ("last_bonus_type",             "VARCHAR(15)"),
+    ]
+    for col, tipo in cols_v2:
+        execute_supernova(
+            f"ALTER TABLE multibet.segmentacao_sa_diaria "
+            f"ADD COLUMN IF NOT EXISTS {col} {tipo};"
+        )
+    log.info(f"  Migracao v2: {len(cols_v2)} colunas garantidas via ALTER TABLE IF NOT EXISTS")
 
 
 def gravar_segmentacao(df: pd.DataFrame, snapshot_date: str):
