@@ -1,27 +1,29 @@
 """
-Modulo: Publicacao da Segmentacao A+S no Smartico (External Markers)
+Modulo: Publicacao da Segmentacao no Smartico (External Markers)
 =====================================================================
 
 Recebe o DataFrame ja processado pelo pipeline `segmentacao_sa_diaria.py`
-(57 colunas) e publica tags operacionais no `core_external_markers` do
-Smartico via S2S API.
+e publica a tag de RATING do PCR no `core_external_markers` do Smartico
+via S2S API, para TODA a base (nao so A+S).
 
 Bucket: `core_external_markers` (alinhado com Raphael, 28/04/2026).
-        DIFERENTE do PCR Rating, que vai em `core_custom_prop1`.
+        Nesta v3 do PCR push, Raphael decidiu voltar para external_markers
+        (saindo de core_custom_prop1 que era a v1.5 de 22/04). Justificativa:
+        consolidar tudo em markers para facilitar regras de campanha CRM
+        que ja usam markers como input.
 
-Tags publicadas (4 prefixos atomicos):
-  - SEG_TREND_<SUBINDO|CAINDO|ESTAVEL>   (1 tag por player)
-  - SEG_LIFECYCLE_<NEW|ACTIVE|AT_RISK|CHURNED|DORMANT>  (1 tag por player)
-  - SEG_RG_<NORMAL|CLOSED|COOL_OFF>      (1 tag por player)
-  - SEG_BONUS_ABUSER                     (so se BONUS_ABUSE_FLAG = 1)
+ESTE PIPELINE SUBSTITUI o antigo `scripts/push_pcr_to_smartico.py` (que
+publicava em core_custom_prop1). O antigo sera desativado no orquestrador
+em paralelo a esta migracao.
 
-Operacao atomica POR JOGADOR (preserva tags de outros pipelines):
+Tags publicadas (1 prefixo atomico, 1 tag por jogador):
+  - PCR_RATING_<S|A|B|C|D|E>   (1 tag por player baseado no rating do PCR)
+  - PCR_RATING_NEW             (shadow mode hoje — Raphael alinhar)
+
+Operacao atomica POR JOGADOR (preserva tags de outros pipelines no markers):
     {
-      "^core_external_markers": ["SEG_TREND_*", "SEG_LIFECYCLE_*",
-                                 "SEG_RG_*", "SEG_BONUS_*"],
-      "+core_external_markers": ["SEG_TREND_SUBINDO",
-                                 "SEG_LIFECYCLE_AT_RISK",
-                                 "SEG_RG_NORMAL"]
+      "^core_external_markers": ["PCR_RATING_*"],
+      "+core_external_markers": ["PCR_RATING_S"]
     }
 
 Diff vs snapshot anterior (idempotencia + correcao de furo "player que sumiu"):
@@ -62,13 +64,20 @@ log = logging.getLogger(__name__)
 # Bucket Smartico — alinhado com Raphael (28/04/2026)
 BUCKET = "core_external_markers"
 
-# Patterns para limpar antes do add (idempotencia)
-TAG_PATTERNS_REMOVE = [
-    "SEG_TREND_*",
-    "SEG_LIFECYCLE_*",
-    "SEG_RG_*",
-    "SEG_BONUS_*",
-]
+# Pattern para limpar antes do add (idempotencia atomica)
+TAG_PATTERNS_REMOVE = ["PCR_RATING_*"]
+
+# Mapping rating PCR -> tag Smartico
+RATING_TO_TAG = {
+    "S": "PCR_RATING_S",
+    "A": "PCR_RATING_A",
+    "B": "PCR_RATING_B",
+    "C": "PCR_RATING_C",
+    "D": "PCR_RATING_D",
+    "E": "PCR_RATING_E",
+    # NEW: shadow mode hoje. Quando Raphael liberar, definir aqui.
+    # "NEW": "PCR_RATING_NEW",
+}
 
 
 # ============================================================
@@ -78,38 +87,18 @@ def _construir_tags_vetorizado(df: pd.DataFrame) -> pd.DataFrame:
     """
     Adiciona coluna 'tags_seg' (List[str]) ao df, computada vetorialmente.
 
-    Players que nao tiverem nenhuma tag valida (todas as colunas vazias)
-    ficam com lista vazia — nao geram evento.
+    1 tag por jogador: PCR_RATING_<rating>. Players sem rating valido
+    (ex: NEW em shadow mode hoje) ficam com lista vazia — nao geram evento.
     """
     df = df.copy()
+    rating = df.get("rating", pd.Series([""] * len(df))).fillna("").astype(str).str.upper().str.strip()
 
-    def _fill(s):
-        return s.fillna("").astype(str).str.upper()
+    # Map vetorizado rating -> tag (None onde rating invalido / shadow mode)
+    df["_pcr_tag"] = rating.map(RATING_TO_TAG).fillna("")
 
-    trend = _fill(df.get("tendencia", pd.Series([], dtype=object)))
-    life  = _fill(df.get("LIFECYCLE_STATUS", pd.Series([], dtype=object)))
-    rg    = _fill(df.get("RG_STATUS", pd.Series([], dtype=object)))
-    abuse = pd.to_numeric(df.get("BONUS_ABUSE_FLAG", pd.Series([], dtype=object)),
-                           errors="coerce").fillna(0).astype(int)
-
-    # Pre-fixacao com prefixos SEG_* — strings vazias ou invalidas viram ""
-    valid_trend = trend.isin(["SUBINDO", "CAINDO", "ESTAVEL"])
-    valid_life  = life.isin(["NEW", "ACTIVE", "AT_RISK", "CHURNED", "DORMANT"])
-    valid_rg    = rg.isin(["NORMAL", "RG_CLOSED", "RG_COOL_OFF"])
-
-    df["_seg_trend"] = np.where(valid_trend, "SEG_TREND_" + trend, "")
-    df["_seg_life"]  = np.where(valid_life, "SEG_LIFECYCLE_" + life, "")
-    df["_seg_rg"]    = np.where(valid_rg,
-                                  "SEG_RG_" + rg.str.replace("RG_", "", regex=False),
-                                  "")
-    df["_seg_abuse"] = np.where(abuse == 1, "SEG_BONUS_ABUSER", "")
-
-    # Concat por linha — vetorizado, ~10x mais rapido que apply
-    df["tags_seg"] = (
-        df[["_seg_trend", "_seg_life", "_seg_rg", "_seg_abuse"]]
-        .apply(lambda r: [t for t in r if t], axis=1)
-    )
-    df = df.drop(columns=["_seg_trend", "_seg_life", "_seg_rg", "_seg_abuse"])
+    # tags_seg: lista com 1 elemento (ou vazia se shadow mode / invalido)
+    df["tags_seg"] = df["_pcr_tag"].apply(lambda t: [t] if t else [])
+    df = df.drop(columns=["_pcr_tag"])
     return df
 
 
@@ -127,46 +116,32 @@ def _carregar_snapshot_anterior(snapshot_date: str) -> Optional[pd.DataFrame]:
         log.warning(f"  Sem acesso ao Super Nova DB ({e}) — pulando diff.")
         return None
 
-    # SQL tolerante: se as colunas v2 nao existirem ainda (primeiro run da v2),
-    # cai pra apenas player_id/external_id (suficiente pra diff de "sumidos").
-    try:
-        rows = execute_supernova(
-            """
-            SELECT player_id, external_id, tendencia, lifecycle_status,
-                   rg_status, bonus_abuse_flag
-            FROM multibet.segmentacao_sa_diaria
-            WHERE snapshot_date = (
-                SELECT MAX(snapshot_date) FROM multibet.segmentacao_sa_diaria
-                WHERE snapshot_date < %s
-            );
-            """,
-            params=(snapshot_date,),
-            fetch=True,
-        )
-        cols = ["player_id", "external_id", "tendencia",
-                "LIFECYCLE_STATUS", "RG_STATUS", "BONUS_ABUSE_FLAG"]
-    except Exception as e:
-        # Schema antigo (v1) — so player_id e external_id
-        log.warning(f"  Schema v1 detectado ({e}) — diff parcial (so 'sumidos').")
-        rows = execute_supernova(
-            """
-            SELECT player_id, external_id
-            FROM multibet.segmentacao_sa_diaria
-            WHERE snapshot_date = (
-                SELECT MAX(snapshot_date) FROM multibet.segmentacao_sa_diaria
-                WHERE snapshot_date < %s
-            );
-            """,
-            params=(snapshot_date,),
-            fetch=True,
-        )
-        cols = ["player_id", "external_id"]
+    # Para detectar 'sumidos' (player que estava ontem mas nao esta hoje na base PCR),
+    # so precisamos de player_id + external_id do snapshot anterior.
+    # Note: o pipeline grava A+S em segmentacao_sa_diaria, mas o snapshot Smartico
+    # vai pra base PCR completa (~136k). O diff de 'sumidos' aqui captura A+S que
+    # mudaram de tier (sairam de A+S) — mas como agora subimos PCR_RATING para
+    # TODOS os tiers, esse player vai receber o novo PCR_RATING_<X> automaticamente.
+    # Mantemos o codigo por defesa: se um player saiu da base ATIVA do PCR (deletado,
+    # banido), removemos as tags PCR_RATING_* do perfil dele.
+    rows = execute_supernova(
+        """
+        SELECT player_id, external_id
+        FROM multibet.segmentacao_sa_diaria
+        WHERE snapshot_date = (
+            SELECT MAX(snapshot_date) FROM multibet.segmentacao_sa_diaria
+            WHERE snapshot_date < %s
+        );
+        """,
+        params=(snapshot_date,),
+        fetch=True,
+    )
 
     if not rows:
         log.info("  Sem snapshot anterior — primeiro run (sem diff).")
         return None
-    df = pd.DataFrame(rows, columns=cols)
-    log.info(f"  Snapshot anterior: {len(df):,} jogadores.")
+    df = pd.DataFrame(rows, columns=["player_id", "external_id"])
+    log.info(f"  Snapshot anterior (A+S): {len(df):,} jogadores.")
     return df
 
 
@@ -198,27 +173,33 @@ def _identificar_players_sumidos(df_atual: pd.DataFrame,
 def _pick_canary(df: pd.DataFrame) -> Optional[pd.Series]:
     """
     Escolhe 1 jogador SEGURO pra Fase Canario:
-      - rating A (nao S, mais seguro pra teste)
+      - rating B ou C (meio-termo, nao extremo) — alinhado com push_pcr antigo
       - c_category = real_user
-      - tendencia = Estavel (nao em transicao)
-      - sem BONUS_ABUSE_FLAG
       - external_id valido
-      - PVS no IQR (nao borderline)
+      - PVS no IQR do rating (nao borderline)
     """
+    rating_col = df.get("rating", pd.Series([""] * len(df))).fillna("").astype(str)
+    cat_col = df.get("c_category", pd.Series([""] * len(df))).fillna("").astype(str)
     mask = (
-        (df["rating"] == "A")
-        & (df["c_category"] == "real_user")
-        & (df["tendencia"] == "Estavel")
-        & (df["BONUS_ABUSE_FLAG"].fillna(0).astype(int) == 0)
+        rating_col.isin(["B", "C"])
+        & (cat_col == "real_user")
         & df["external_id"].notna()
     )
     candidates = df[mask].copy()
     if candidates.empty:
         return None
 
-    pvs = pd.to_numeric(candidates["pvs"], errors="coerce")
-    q1, q3 = pvs.quantile(0.25), pvs.quantile(0.75)
-    candidates = candidates[(pvs >= q1) & (pvs <= q3)]
+    # Evita borderline: PVS entre P25 e P75 do proprio rating
+    if "pvs" in candidates.columns:
+        pvs = pd.to_numeric(candidates["pvs"], errors="coerce")
+        candidates = candidates.assign(_pvs_num=pvs)
+        out = []
+        for r, group in candidates.groupby("rating"):
+            q1, q3 = group["_pvs_num"].quantile(0.25), group["_pvs_num"].quantile(0.75)
+            sub = group[(group["_pvs_num"] >= q1) & (group["_pvs_num"] <= q3)]
+            out.append(sub)
+        candidates = pd.concat(out) if out else candidates
+        candidates = candidates.drop(columns=["_pvs_num"], errors="ignore")
     if candidates.empty:
         return None
     return candidates.sample(n=1, random_state=42).iloc[0]

@@ -27,7 +27,7 @@ Ela responde à pergunta: **"Quem são meus melhores jogadores hoje, e o que cad
 6. Persiste o snapshot histórico em banco relacional.
 7. Publica o CSV final + legenda explicativa.
 8. Envia por e-mail aos donos das ações de CRM.
-9. Publica tags operacionais no perfil do jogador no CRM, prontas para uso em régua de campanhas.
+9. Publica o rating do jogador como tag no perfil do CRM, pronta para uso em régua de campanhas (`PCR_RATING_S`, `PCR_RATING_A`, ..., `PCR_RATING_E`).
 ```
 
 A entrega é **idempotente** (rodar duas vezes no mesmo dia gera o mesmo resultado) e **incremental** (nunca sobrescreve histórico — guarda todos os snapshots para auditoria e séries temporais).

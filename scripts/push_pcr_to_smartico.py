@@ -1,7 +1,22 @@
 """
 push_pcr_to_smartico.py
 ================================================================
-Publica os ratings PCR (Player Credit Rating) no Smartico via S2S API.
+*** DEPRECATED — 28/04/2026 ***
+
+Este pipeline foi DESCONTINUADO. A publicacao de PCR_RATING_* no Smartico
+agora e feita pelo pipeline integrado `pipelines/segmentacao_sa_diaria.py`
+(via modulo `pipelines/segmentacao_sa_smartico.py`).
+
+O bucket tambem mudou: PCR_RATING agora vai em `core_external_markers`
+(decisao Raphael 28/04 — voltou de core_custom_prop1).
+
+NAO REMOVER A FILE — preservada para historico e rollback emergencial.
+NAO INCLUIR NO CRON do orquestrador (Gusta vai retirar quando substituir
+o segmentacao_sa pela v2).
+
+================================================================
+
+Publicacao de ratings PCR (Player Credit Rating) no Smartico via S2S API.
 
 Arquitetura (replica push_risk_matrix_to_smartico.py):
     - 1 tag de rating por jogador (prefixo PCR_RATING_*):
