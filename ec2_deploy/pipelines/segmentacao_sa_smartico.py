@@ -75,8 +75,7 @@ RATING_TO_TAG = {
     "C": "PCR_RATING_C",
     "D": "PCR_RATING_D",
     "E": "PCR_RATING_E",
-    # NEW: shadow mode hoje. Quando Raphael liberar, definir aqui.
-    # "NEW": "PCR_RATING_NEW",
+    "NEW": "PCR_RATING_NEW",  # ativado 28/04/2026 para validacao com Raphael
 }
 
 
