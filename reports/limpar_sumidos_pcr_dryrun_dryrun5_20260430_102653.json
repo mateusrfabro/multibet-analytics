@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-04-30T10:26:53.769966",
+  "snapshot_hoje": "2026-04-30",
+  "snapshot_ontem": "2026-04-29",
+  "modo": "dryrun5",
+  "total_eventos": 5,
+  "tags_remove": [
+    "PCR_RATING_S",
+    "PCR_RATING_A",
+    "PCR_RATING_B",
+    "PCR_RATING_C",
+    "PCR_RATING_D",
+    "PCR_RATING_E",
+    "PCR_RATING_NEW"
+  ],
+  "sample": [
+    {
+      "user_ext_id": "28170784",
+      "player_id": "342276191789894128",
+      "rating_anterior": "E",
+      "payload": {
+        "-core_external_markers": [
+          "PCR_RATING_S",
+          "PCR_RATING_A",
+          "PCR_RATING_B",
+          "PCR_RATING_C",
+          "PCR_RATING_D",
+          "PCR_RATING_E",
+          "PCR_RATING_NEW"
+        ],
+        "skip_cjm": true
+      }
+    },
+    {
+      "user_ext_id": "30406521",
+      "player_id": "356322921792129865",
+      "rating_anterior": "D",
+      "payload": {
+        "-core_external_markers": [
+          "PCR_RATING_S",
+          "PCR_RATING_A",
+          "PCR_RATING_B",
+          "PCR_RATING_C",
+          "PCR_RATING_D",
+          "PCR_RATING_E",
+          "PCR_RATING_NEW"
+        ],
+        "skip_cjm": true
+      }
+    },
+    {
+      "user_ext_id": "391581769706971",
+      "player_id": "786041769706971479",
+      "rating_anterior": "E",
+      "payload": {
+        "-core_external_markers": [
+          "PCR_RATING_S",
+          "PCR_RATING_A",
+          "PCR_RATING_B",
+          "PCR_RATING_C",
+          "PCR_RATING_D",
+          "PCR_RATING_E",
+          "PCR_RATING_NEW"
+        ],
+        "skip_cjm": true
+      }
+    },
+    {
+      "user_ext_id": "28627373",
+      "player_id": "684066121790350717",
+      "rating_anterior": "C",
+      "payload": {
+        "-core_external_markers": [
+          "PCR_RATING_S",
+          "PCR_RATING_A",
+          "PCR_RATING_B",
+          "PCR_RATING_C",
+          "PCR_RATING_D",
+          "PCR_RATING_E",
+          "PCR_RATING_NEW"
+        ],
+        "skip_cjm": true
+      }
+    },
+    {
+      "user_ext_id": "30125381",
+      "player_id": "463198871791848725",
+      "rating_anterior": "C",
+      "payload": {
+        "-core_external_markers": [
+          "PCR_RATING_S",
+          "PCR_RATING_A",
+          "PCR_RATING_B",
+          "PCR_RATING_C",
+          "PCR_RATING_D",
+          "PCR_RATING_E",
+          "PCR_RATING_NEW"
+        ],
+        "skip_cjm": true
+      }
+    }
+  ]
+}

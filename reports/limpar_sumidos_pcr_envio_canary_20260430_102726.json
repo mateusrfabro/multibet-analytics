@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-04-30T10:27:26.435156",
+  "snapshot_hoje": "2026-04-30",
+  "snapshot_ontem": "2026-04-29",
+  "modo": "canary",
+  "total_enviados": 1,
+  "sent": 1,
+  "failed": 0,
+  "reconciliacao_diff": 0,
+  "user_ext_ids_enviados": [
+    "28627373"
+  ]
+}
