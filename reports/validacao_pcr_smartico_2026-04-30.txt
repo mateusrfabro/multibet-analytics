@@ -1,0 +1,79 @@
+==============================================================================
+  VALIDACAO PCR + SMARTICO — 2026-04-30
+  Comparativo D vs D-1: 2026-04-30  vs  2026-04-29
+  Gerado em: 2026-04-30 10:03:57
+==============================================================================
+
+TOTAL ONTEM  (2026-04-29):  135,545 jogadores
+TOTAL HOJE   (2026-04-30):  134,559 jogadores
+DELTA TOTAL                : -986 (-0.73%)
+
+------------------------------------------------------------------------------
+1. DISTRIBUICAO POR RATING
+------------------------------------------------------------------------------
+        ontem   hoje  delta    pct
+rating                            
+S        1281   1289      8   0.62
+A        8965   9020     55   0.61
+B       21771  21907    136   0.62
+C       32017  32216    199   0.62
+D       32017  32215    198   0.62
+E       32017  32216    199   0.62
+NEW      7477   5696  -1781 -23.82
+
+  (delta = hoje - ontem | pct = variacao % vs ontem)
+  Sanity: variacao tipica diaria <5%. Acima disso = investigar.
+
+------------------------------------------------------------------------------
+2. RESUMO DE MUDANCAS
+------------------------------------------------------------------------------
+  NOVOS HOJE        :        0  (entraram na base PCR — receberam tag PCR_RATING_X nova)
+  SUMIDOS HOJE      :      986  (sairam da base PCR — receberam REMOVE PCR_RATING_*)
+  PROMOVIDOS        :    2,551  (subiram tier — tag mudou)
+  REBAIXADOS        :    1,023  (caiu tier — tag mudou)
+  ESTAVEIS (mesmo)  :  130,985  (rating preservado — tag re-aplicada)
+
+------------------------------------------------------------------------------
+3. MATRIZ DE TRANSICAO (linhas = ONTEM | colunas = HOJE)
+------------------------------------------------------------------------------
+rating           S     A      B      C      D      E   NEW   TOTAL
+rating_ontem                                                      
+S             1216    65      0      0      0      0     0    1281
+A               36  8773    146      5      2      1     0    8963
+B               16    53  21415    230     23      6     0   21743
+C               21    94    148  31291    257     56     0   31867
+D                0    25     60     94  31330    232     0   31741
+E                0     0     37     37    149  31264     0   31487
+NEW              0    10    101    559    454    657  5696    7477
+TOTAL         1289  9020  21907  32216  32215  32216  5696  134559
+
+  Diagonal = jogadores que mantiveram rating.
+  Acima da diagonal = subiram (S esta no topo).
+  Abaixo da diagonal = cairam.
+
+------------------------------------------------------------------------------
+4. SPOT-CHECK SMARTICO — abrir cada user_ext_id no painel
+------------------------------------------------------------------------------
+
+Para cada ID abaixo, validar no painel Smartico (External Markers):
+  - Tag PCR_RATING_<rating_hoje> esta presente
+  - NAO ha tag PCR_RATING_<rating_ontem> sobrando (operacao atomica)
+  - Tags RISK_* de outros pipelines estao preservadas
+
+      caso          player_id     external_id rating_ontem rating_hoje   pvs
+SUMIU_HOJE 149842621791282545        29559201            E           E 17.34
+SUMIU_HOJE 828756711791508011        29784667            D           D 29.25
+ PROMOVIDO 893981769018262256 752591769018262            C           B 47.22
+ PROMOVIDO 987991774975300715 335821774975300          NEW           D 33.85
+ REBAIXADO 546938831789802642        28079298            D           E 27.30
+ REBAIXADO 980061767582773688 148411767582773            B           C 41.06
+   ESTAVEL 930787621791405644        29682300            A           A 59.58
+   ESTAVEL 668121772459640564 813721772459640            B           B 54.03
+
+------------------------------------------------------------------------------
+5. SEMAFORO
+------------------------------------------------------------------------------
+  AMARELO — flags abaixo merecem investigacao:
+    * Rating NEW: variacao -23.82% — investigar
+
+==============================================================================
