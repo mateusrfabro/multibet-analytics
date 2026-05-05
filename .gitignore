@@ -41,6 +41,9 @@ segmentacao/app/logs/
 # Memory (local do Claude Code)
 memory/
 
+# Pastas de validacao tecnica interna (so pro Mateus, nao vai pro repo do squad)
+_internal_*/
+
 # IDE
 .vscode/
 *.code-workspace
