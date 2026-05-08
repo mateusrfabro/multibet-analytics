@@ -359,7 +359,11 @@ def bloco_1_2_metricas_30d(df: pd.DataFrame, snapshot_date: Optional[str] = None
     Janela: 30d rolling, terminando em D-1 (exclui parcial). Alinhada com
     pratica do PCR upstream (90d) — auditavel/replicavel.
 
-    Fonte: ps_bi.fct_player_activity_daily (view dbt, BRL pre-agregado).
+    Fonte: bireports_ec2.tbl_ecr_wise_daily_bi_summary (raw EC2, centavos).
+    Migrado de ps_bi.fct_player_activity_daily em 08/05/2026 — fato dbt parou
+    de materializar em 06/04/2026 e zerou todas as colunas 30d em produ-cao
+    (auditoria CSV 07/05). Mesmo motivo do fix no PCR upstream (commit dfaf4ed).
+    Conversao: valores em centavos / 100.0 retornam BRL.
     Performance: 1 query, ~12k player_ids, ~5-15s no Athena.
     """
     from db.athena import query_athena
@@ -375,34 +379,50 @@ def bloco_1_2_metricas_30d(df: pd.DataFrame, snapshot_date: Optional[str] = None
         log.warning("  Sem player_ids — pulando.")
         return df
 
+    # Migrado para bireports_ec2.tbl_ecr_wise_daily_bi_summary — mesma fonte
+    # do PCR pipeline upstream (08/05/2026) por gap dbt em fct_player_activity_daily.
+    # Mapeamento: c_ecr_id<->player_id | c_created_date<->activity_date |
+    # c_*_amount em centavos -> /100.0 (BRL) | c_co_*<->cashout_* | NGR=GGR-bonus_issued (proxy).
     sql_template = f"""
     WITH metrics_30d AS (
         SELECT
-            f.player_id,
-            COALESCE(SUM(f.ggr_base), 0)                  AS ggr_30d,
-            COALESCE(SUM(f.ngr_base), 0)                  AS ngr_30d,
-            COALESCE(SUM(f.deposit_success_count), 0)     AS deposit_count_30d,
-            COALESCE(SUM(f.deposit_success_base), 0)      AS deposit_amount_30d,
-            COALESCE(SUM(f.cashout_success_count), 0)     AS withdrawal_count_30d,
-            COALESCE(SUM(f.cashout_success_base), 0)      AS withdrawal_amount_30d,
-            COALESCE(SUM(f.casino_realbet_base), 0)
-              + COALESCE(SUM(f.sb_realbet_base), 0)       AS bet_amount_30d,
-            COALESCE(SUM(f.casino_realbet_count), 0)
-              + COALESCE(SUM(f.sb_realbet_count), 0)      AS bet_count_30d
-        FROM ps_bi.fct_player_activity_daily f
-        WHERE f.activity_date >= DATE '{janela_ini}'
-          AND f.activity_date <  DATE '{snap}'
-          AND f.player_id IN ({{ids_str}})
-        GROUP BY f.player_id
+            s.c_ecr_id AS player_id,
+            -- GGR = casino_realcash + sb_realcash (em centavos), /100 -> BRL
+            COALESCE(SUM(
+                (s.c_casino_realcash_bet_amount - s.c_casino_realcash_win_amount)
+              + (s.c_sb_realcash_bet_amount     - s.c_sb_realcash_win_amount    )
+            ), 0) / 100.0 AS ggr_30d,
+            -- NGR aproximado: GGR menos bonus_issued (proxy do PCR;
+            -- bonus_turnedreal nao esta disponivel direto em bireports).
+            COALESCE(SUM(
+                (s.c_casino_realcash_bet_amount - s.c_casino_realcash_win_amount)
+              + (s.c_sb_realcash_bet_amount     - s.c_sb_realcash_win_amount    )
+              -  s.c_bonus_issued_amount
+            ), 0) / 100.0 AS ngr_30d,
+            COALESCE(SUM(s.c_deposit_success_count), 0)          AS deposit_count_30d,
+            COALESCE(SUM(s.c_deposit_success_amount), 0) / 100.0 AS deposit_amount_30d,
+            COALESCE(SUM(s.c_co_success_count), 0)               AS withdrawal_count_30d,
+            COALESCE(SUM(s.c_co_success_amount), 0) / 100.0      AS withdrawal_amount_30d,
+            COALESCE(SUM(
+                s.c_casino_realcash_bet_amount + s.c_sb_realcash_bet_amount
+            ), 0) / 100.0 AS bet_amount_30d,
+            COALESCE(SUM(
+                s.c_casino_realcash_bet_count  + s.c_sb_realcash_bet_count
+            ), 0) AS bet_count_30d
+        FROM bireports_ec2.tbl_ecr_wise_daily_bi_summary s
+        WHERE s.c_created_date >= DATE '{janela_ini}'
+          AND s.c_created_date <  DATE '{snap}'
+          AND s.c_ecr_id IN ({{ids_str}})
+        GROUP BY s.c_ecr_id
     ),
     metrics_lifetime AS (
         SELECT
-            f.player_id,
-            COALESCE(SUM(f.deposit_success_count), 0) AS deposit_count_lifetime,
-            COALESCE(SUM(f.deposit_success_base), 0)  AS deposit_amount_lifetime
-        FROM ps_bi.fct_player_activity_daily f
-        WHERE f.player_id IN ({{ids_str}})
-        GROUP BY f.player_id
+            s.c_ecr_id AS player_id,
+            COALESCE(SUM(s.c_deposit_success_count), 0)          AS deposit_count_lifetime,
+            COALESCE(SUM(s.c_deposit_success_amount), 0) / 100.0 AS deposit_amount_lifetime
+        FROM bireports_ec2.tbl_ecr_wise_daily_bi_summary s
+        WHERE s.c_ecr_id IN ({{ids_str}})
+        GROUP BY s.c_ecr_id
     )
     SELECT
         m.player_id,
@@ -422,8 +442,8 @@ def bloco_1_2_metricas_30d(df: pd.DataFrame, snapshot_date: Optional[str] = None
     FROM metrics_30d m
     LEFT JOIN metrics_lifetime l ON m.player_id = l.player_id
     """
-    log.info(f"  Athena: {len(player_ids):,} players (janela {janela_ini} a {snap}, excl D-0)...")
-    metrics = _run_athena_in_batches(sql_template, player_ids, database="ps_bi", batch_size=4000)
+    log.info(f"  Athena (bireports_ec2): {len(player_ids):,} players (janela {janela_ini} a {snap}, excl D-0)...")
+    metrics = _run_athena_in_batches(sql_template, player_ids, database="bireports_ec2", batch_size=4000)
     log.info(f"  -> {len(metrics):,} linhas")
 
     metrics["player_id"] = pd.to_numeric(metrics["player_id"], errors="coerce").astype("Int64")
@@ -773,7 +793,16 @@ def bloco_5b_btr_bonus(df: pd.DataFrame, snapshot_date: Optional[str] = None) ->
       - LAST_BONUS_TYPE                 : 'CASH' / 'FREESPIN' / 'OUTRO' — proxy = 'CASH'
                                           (bonus_ec2 nao acessivel ainda)
 
-    Fonte: ps_bi.fct_player_activity_daily (campo bonus_issued_base / bonus_turnedreal_base).
+    Fonte: bireports_ec2.tbl_ecr_wise_daily_bi_summary.
+    Migrado de ps_bi.fct_player_activity_daily em 08/05/2026 — fato dbt parou
+    de materializar em 06/04/2026 e zerou bonus 30d em produ-cao (auditoria
+    CSV 07/05). Mesmo motivo do fix no PCR upstream (commit dfaf4ed).
+    Conversao: valores em centavos / 100.0 retornam BRL.
+
+    LIMITACAO conhecida: bireports NAO tem campo `bonus_turned_real` (bonus
+    convertido em saldo real apos cumprir rollover). Logo, BTR_30D / BTR_CASINO_30D
+    / BTR_SPORT_30D ficam NULL nesta versao. Para reativar, precisa cruzar com
+    bonus_ec2 (txn_type rules). Outras colunas estao 100% computaveis na bireports.
 
     Janela: 30d rolling ate D-1 (consistente com Bloco 1+2).
     """
@@ -795,41 +824,50 @@ def bloco_5b_btr_bonus(df: pd.DataFrame, snapshot_date: Optional[str] = None) ->
             df[c] = None
         return df
 
+    # Migrado para bireports_ec2.tbl_ecr_wise_daily_bi_summary.
+    # bonus_turnedreal NAO existe em bireports -> retornamos 0; downstream
+    # nulifica BTR_*. Demais cols mapeadas direto (BRL via /100.0).
     sql_template = f"""
     WITH b30 AS (
         SELECT
-            f.player_id,
-            COALESCE(SUM(f.bonus_issued_base), 0)      AS bonus_issued_30d,
-            COALESCE(SUM(f.bonus_turnedreal_base), 0)  AS bonus_turnedreal_30d,
-            COALESCE(SUM(f.ngr_base), 0)               AS ngr_30d,
-            COALESCE(SUM(f.casino_realbet_base), 0)    AS casino_realbet_30d,
-            COALESCE(SUM(f.sb_realbet_base), 0)        AS sb_realbet_30d,
-            COALESCE(SUM(f.casino_realbet_base), 0)
-              + COALESCE(SUM(f.sb_realbet_base), 0)    AS realbet_total_30d
-        FROM ps_bi.fct_player_activity_daily f
-        WHERE f.activity_date >= DATE '{janela_ini}'
-          AND f.activity_date <  DATE '{snap}'
-          AND f.player_id IN ({{ids_str}})
-        GROUP BY f.player_id
+            s.c_ecr_id AS player_id,
+            COALESCE(SUM(s.c_bonus_issued_amount), 0) / 100.0    AS bonus_issued_30d,
+            CAST(0 AS DOUBLE)                                    AS bonus_turnedreal_30d,
+            -- NGR proxy (=GGR - bonus_issued), mesma definicao do Bloco 1+2
+            COALESCE(SUM(
+                (s.c_casino_realcash_bet_amount - s.c_casino_realcash_win_amount)
+              + (s.c_sb_realcash_bet_amount     - s.c_sb_realcash_win_amount    )
+              -  s.c_bonus_issued_amount
+            ), 0) / 100.0 AS ngr_30d,
+            COALESCE(SUM(s.c_casino_realcash_bet_amount), 0) / 100.0 AS casino_realbet_30d,
+            COALESCE(SUM(s.c_sb_realcash_bet_amount),     0) / 100.0 AS sb_realbet_30d,
+            COALESCE(SUM(
+                s.c_casino_realcash_bet_amount + s.c_sb_realcash_bet_amount
+            ), 0) / 100.0 AS realbet_total_30d
+        FROM bireports_ec2.tbl_ecr_wise_daily_bi_summary s
+        WHERE s.c_created_date >= DATE '{janela_ini}'
+          AND s.c_created_date <  DATE '{snap}'
+          AND s.c_ecr_id IN ({{ids_str}})
+        GROUP BY s.c_ecr_id
     ),
     blife AS (
         SELECT
-            f.player_id,
-            COALESCE(SUM(f.bonus_issued_base), 0)     AS bonus_issued_lifetime,
-            COALESCE(SUM(f.deposit_success_base), 0)  AS deposit_lifetime
-        FROM ps_bi.fct_player_activity_daily f
-        WHERE f.player_id IN ({{ids_str}})
-        GROUP BY f.player_id
+            s.c_ecr_id AS player_id,
+            COALESCE(SUM(s.c_bonus_issued_amount), 0) / 100.0    AS bonus_issued_lifetime,
+            COALESCE(SUM(s.c_deposit_success_amount), 0) / 100.0 AS deposit_lifetime
+        FROM bireports_ec2.tbl_ecr_wise_daily_bi_summary s
+        WHERE s.c_ecr_id IN ({{ids_str}})
+        GROUP BY s.c_ecr_id
     ),
     last_bn AS (
         SELECT
-            f.player_id,
-            MAX(f.activity_date) AS last_bonus_date
-        FROM ps_bi.fct_player_activity_daily f
-        WHERE f.player_id IN ({{ids_str}})
-          AND f.bonus_issued_base > 0
-          AND f.activity_date >= DATE '{snap - timedelta(days=180)}'
-        GROUP BY f.player_id
+            s.c_ecr_id AS player_id,
+            MAX(s.c_created_date) AS last_bonus_date
+        FROM bireports_ec2.tbl_ecr_wise_daily_bi_summary s
+        WHERE s.c_ecr_id IN ({{ids_str}})
+          AND s.c_bonus_issued_amount > 0
+          AND s.c_created_date >= DATE '{snap - timedelta(days=180)}'
+        GROUP BY s.c_ecr_id
     )
     SELECT
         b30.player_id,
@@ -846,8 +884,8 @@ def bloco_5b_btr_bonus(df: pd.DataFrame, snapshot_date: Optional[str] = None) ->
     LEFT JOIN blife bl ON b30.player_id = bl.player_id
     LEFT JOIN last_bn lb ON b30.player_id = lb.player_id
     """
-    log.info(f"  Athena: BTR/bonus para {len(player_ids):,} players...")
-    raw = _run_athena_in_batches(sql_template, player_ids, database="ps_bi", batch_size=3000)
+    log.info(f"  Athena (bireports_ec2): BTR/bonus para {len(player_ids):,} players...")
+    raw = _run_athena_in_batches(sql_template, player_ids, database="bireports_ec2", batch_size=3000)
     log.info(f"  -> {len(raw):,} linhas")
 
     raw["player_id"] = pd.to_numeric(raw["player_id"], errors="coerce").astype("Int64")
@@ -864,16 +902,18 @@ def bloco_5b_btr_bonus(df: pd.DataFrame, snapshot_date: Optional[str] = None) ->
 
     raw["BONUS_ISSUED_30D"] = issued
 
-    # BTR_30D = bonus_turnedreal / bonus_issued (None se sem bonus)
+    # BTR_30D = bonus_turnedreal / bonus_issued
+    # IMPORTANTE: bireports_ec2 nao expoe bonus_turned_real diretamente. Acima
+    # forcamos `turned = 0` na query, o que daria BTR=0 para qualquer player
+    # com bonus emitido — *enganoso* (sugere "nao virou real" em vez de "nao temos
+    # essa metrica"). Por isso aqui nulificamos explicitamente as 3 colunas BTR_*
+    # e adicionamos log de aviso. Reativar quando integrar bonus_ec2.
     issued_safe = issued.replace(0, np.nan)
-    raw["BTR_30D"] = turned / issued_safe  # NaN onde issued=0
-
-    # BTR split por produto (proxy via proporcao realbet)
-    realbet_safe = realbet.replace(0, np.nan)
-    prop_casino = (casino_rb / realbet_safe).fillna(0)
-    prop_sport  = (sport_rb / realbet_safe).fillna(0)
-    raw["BTR_CASINO_30D"] = (turned * prop_casino) / issued_safe
-    raw["BTR_SPORT_30D"]  = (turned * prop_sport)  / issued_safe
+    raw["BTR_30D"] = np.nan
+    raw["BTR_CASINO_30D"] = np.nan
+    raw["BTR_SPORT_30D"]  = np.nan
+    _ = turned, realbet, casino_rb, sport_rb  # vars carregadas mas nao usadas (placeholder ate bonus_ec2)
+    log.info("  BTR_*_30D = NULL (bonus_turned_real ausente em bireports_ec2 — pendente integrar bonus_ec2)")
 
     # BONUS_DEPENDENCY_RATIO_LIFETIME
     deposit_lt_safe = deposit_lt.replace(0, np.nan)

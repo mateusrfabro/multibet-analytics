@@ -39,7 +39,7 @@ A entrega é **idempotente** (rodar duas vezes no mesmo dia gera o mesmo resulta
 A base diária tem três blocos de informação por jogador:
 
 ### Bloco 1 — Identificação e classificação
-Quem é o jogador, qual rating tem, em que tier comportamental cai, qual o status atual da conta (ativa, fechada, em pausa de Jogo Responsável).
+Quem é o jogador (com primeiro nome e sobrenome para identificação rápida pelo operador), qual rating tem, em que tier comportamental cai, qual o status atual da conta (ativa, fechada, em pausa de Jogo Responsável).
 
 ### Bloco 2 — Métricas de valor e atividade
 Quanto trouxe de receita (GGR/NGR), quanto depositou e sacou, quantas apostas fez, qual ticket médio — em duas janelas: **últimos 30 dias** (sinal recente, gatilho operacional) e **últimos 90 dias** (foto consolidada, baseline de tier).
@@ -171,7 +171,7 @@ A entrega tem três camadas de segurança automatizadas:
 
 ## O que NÃO está na base (e por quê)
 
-- **Dados pessoais (nome, e-mail, telefone)** — fora do escopo. A base usa o **ID do jogador no CRM** para o operador casar no sistema de campanhas, sem expor PII.
+- **Contato direto (e-mail, telefone)** — fora do escopo. A base usa o **ID do jogador no CRM** para o operador casar no sistema de campanhas. **Nome (primeiro e sobrenome)** entra apenas para identificação operacional pelo time interno, com o canal de distribuição restrito.
 - **LTV projetado** — cálculo separado, vive em outra entrega.
 - **Atribuição de afiliado por canal** — vive na base de tráfego/affiliates.
 - **Saldos e contas correntes em tempo real** — a base é diária, não real-time.
@@ -182,4 +182,4 @@ A entrega tem três camadas de segurança automatizadas:
 
 A Segmentação A+S é a **base de trabalho diária do CRM** — tudo que ele precisa saber sobre os 8% mais valiosos da operação, em uma única lista, com janelas estáveis, regras claras e histórico auditável.
 
-A versão final entrega **57 colunas** combinando rating, valor, comportamento, ciclo, jogos preferidos, status regulatório e sinais de risco — pronta para virar campanha, régua, ou decisão estratégica do head de operação.
+A versão final entrega **59 colunas** combinando identificação, rating, valor, comportamento, ciclo, jogos preferidos, status regulatório e sinais de risco — pronta para virar campanha, régua, ou decisão estratégica do head de operação.
