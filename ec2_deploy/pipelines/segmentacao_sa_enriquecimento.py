@@ -383,6 +383,8 @@ def bloco_1_2_metricas_30d(df: pd.DataFrame, snapshot_date: Optional[str] = None
     # do PCR pipeline upstream (08/05/2026) por gap dbt em fct_player_activity_daily.
     # Mapeamento: c_ecr_id<->player_id | c_created_date<->activity_date |
     # c_*_amount em centavos -> /100.0 (BRL) | c_co_*<->cashout_* | NGR=GGR-bonus_issued (proxy).
+    # Filtro is_test: NAO aplicado aqui — player_ids ja vem filtrado do PCR upstream
+    # (multibet.pcr_atual exclui test users na construcao).
     sql_template = f"""
     WITH metrics_30d AS (
         SELECT
@@ -827,6 +829,7 @@ def bloco_5b_btr_bonus(df: pd.DataFrame, snapshot_date: Optional[str] = None) ->
     # Migrado para bireports_ec2.tbl_ecr_wise_daily_bi_summary.
     # bonus_turnedreal NAO existe em bireports -> retornamos 0; downstream
     # nulifica BTR_*. Demais cols mapeadas direto (BRL via /100.0).
+    # Filtro is_test: NAO aplicado aqui — player_ids ja vem filtrado do PCR upstream.
     sql_template = f"""
     WITH b30 AS (
         SELECT

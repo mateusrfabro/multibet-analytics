@@ -44,6 +44,7 @@ import psycopg2.extras
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from db.supernova import execute_supernova, get_supernova_connection
+from db.athena import query_athena
 from db.email_sender import enviar_email
 from pipelines.segmentacao_sa_enriquecimento import (
     bloco_4_derivaveis,
@@ -364,6 +365,63 @@ def calcular_tendencia(df: pd.DataFrame, df_lookback: pd.DataFrame | None) -> pd
     for v, q in df["tendencia"].value_counts().items():
         log.info(f"  {v}: {q:,}")
 
+    return df
+
+
+def enriquecer_nomes_pii(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Busca first_name e last_name em ps_bi.dim_user para os player_ids do df.
+
+    Pedido head 08/05/2026: incluir first_name + last_name no CSV de Slack
+    pra operacao do CRM identificar jogador rapido (sem cruzamento manual com Smartico).
+
+    PII isolada: coluna vai APENAS no CSV (output diario para canal CRM).
+    NAO eh persistido em multibet.segmentacao_sa_diaria — minimizacao LGPD,
+    nome nao precisa ficar duplicado no nosso DB analitico (fonte canonica
+    e a propria dim_user na camada bireports).
+    """
+    log.info("Enriquecendo PII (first_name/last_name) — destino exclusivo: CSV...")
+    df = df.copy()
+    if df.empty:
+        df["first_name"] = None
+        df["last_name"] = None
+        return df
+
+    ecr_ids = df["player_id"].dropna().astype("int64").unique().tolist()
+    if not ecr_ids:
+        df["first_name"] = None
+        df["last_name"] = None
+        return df
+
+    # IN list direto: ecr_ids vem do PCR (interno, BIGINT controlado),
+    # sem risco de injection. Casts pra int garantem tipo limpo.
+    in_list = ", ".join(str(int(x)) for x in ecr_ids)
+    sql = f"""
+    -- Enriquecimento PII para CSV Slack — first_name/last_name ps_bi.dim_user
+    SELECT ecr_id, first_name, last_name
+    FROM ps_bi.dim_user
+    WHERE ecr_id IN ({in_list})
+    """
+    nomes = query_athena(sql, database="ps_bi")
+    log.info(f"  -> {len(nomes):,} nomes recuperados (de {len(ecr_ids):,} ecr_ids)")
+
+    if nomes.empty:
+        df["first_name"] = None
+        df["last_name"] = None
+        return df
+
+    nomes["ecr_id"] = nomes["ecr_id"].astype("int64")
+    df["player_id"] = df["player_id"].astype("int64")
+    df = df.merge(
+        nomes[["ecr_id", "first_name", "last_name"]],
+        left_on="player_id",
+        right_on="ecr_id",
+        how="left",
+    ).drop(columns=["ecr_id"], errors="ignore")
+
+    sem_nome = df["first_name"].isna().sum()
+    if sem_nome > 0:
+        log.warning(f"  -> {sem_nome} jogadores sem first_name na dim_user (vai vazio no CSV)")
     return df
 
 
@@ -741,9 +799,12 @@ def gerar_csv(df: pd.DataFrame, snapshot_date: str) -> tuple[Path, Path]:
     }
     df_csv = df_csv.rename(columns=rename_map)
 
-    # Ordem exata das 57 colunas conforme CSV de referencia do Castrin
+    # Ordem das 59 colunas (57 Castrin + first_name/last_name pedido pelo head 08/05/2026).
+    # PII (nomes) entram no bloco IDENTIFICACAO logo apos external_id, antes de
+    # registration_date — destino exclusivo: CSV Slack (CRM). Nao persiste em DB.
     cols_csv = [
-        "player_id", "external_id", "registration_date", "affiliate_id",
+        "player_id", "external_id", "first_name", "last_name",
+        "registration_date", "affiliate_id",
         "PVS_SCORE", "PCR_RATING", "LIFECYCLE_STATUS", "RECENCY_DAYS",
         "GGR_30D", "NGR_30D", "NGR_90D",
         "DEPOSIT_AMOUNT_30D", "DEPOSIT_COUNT_30D",
@@ -774,14 +835,14 @@ def gerar_csv(df: pd.DataFrame, snapshot_date: str) -> tuple[Path, Path]:
     # Validacao defensiva: garante que TODAS as 57 colunas existem (falha rapido)
     missing = [c for c in cols_csv if c not in df_csv.columns]
     if missing:
-        raise RuntimeError(f"CSV missing colunas Castrin: {missing}")
-    if len(cols_csv) != 57:
-        raise RuntimeError(f"CSV deveria ter 57 colunas — tem {len(cols_csv)}")
+        raise RuntimeError(f"CSV missing colunas: {missing}")
+    if len(cols_csv) != 59:
+        raise RuntimeError(f"CSV deveria ter 59 colunas — tem {len(cols_csv)}")
 
     df_csv[cols_csv].sort_values("PVS_SCORE", ascending=False).to_csv(
         csv_path, index=False, sep=";", decimal=",", encoding="utf-8-sig"
     )
-    log.info(f"CSV salvo: {csv_path} ({len(df):,} linhas x 57 cols — match Castrin)")
+    log.info(f"CSV salvo: {csv_path} ({len(df):,} linhas x 59 cols — Castrin + first_name/last_name)")
 
     # Legenda — 57 colunas alinhadas EXATO com CSV de referencia do Castrin
     legenda = f"""LEGENDA — players_segmento_SA_{snapshot_date}
@@ -799,6 +860,8 @@ IDENTIFICACAO E CLASSIFICACAO
 
   player_id            ID interno do jogador (ecr_id, 18 digitos).
   external_id          ID Smartico (CRM).
+  first_name           Primeiro nome do jogador (ps_bi.dim_user). PII — uso interno CRM.
+  last_name            Sobrenome do jogador (ps_bi.dim_user). PII — uso interno CRM.
   registration_date    Data de cadastro.
   affiliate_id         ID do afiliado de aquisicao.
 
@@ -852,9 +915,13 @@ BONUS E BTR (Bonus Turnover Ratio)
 ==============================================================
 
   BONUS_ISSUED_30D                   Bonus emitido 30d (BRL).
-  BTR_30D                            bonus_turnedreal / bonus_issued (30d).
-  BTR_CASINO_30D / BTR_SPORT_30D     BTR splitado por vertical (proxy realbet).
-  LAST_BONUS_DATE / LAST_BONUS_TYPE  Ultima data e tipo de bonus emitido.
+  BTR_30D                            VAZIO temporariamente. Requer bonus_turned_real
+                                     que nao esta disponivel em bireports_ec2 desde
+                                     a migracao do dbt (06/04/2026). Reativacao
+                                     pendente: integracao com bonus_ec2.
+  BTR_CASINO_30D / BTR_SPORT_30D     VAZIO temporariamente (mesma razao).
+  LAST_BONUS_DATE / LAST_BONUS_TYPE  Ultima data com bonus emitido (180d) / tipo
+                                     proxy 'CASH' (bonus_ec2 nao integrado ainda).
   BONUS_DEPENDENCY_RATIO_30D         BONUS_ISSUED_30D / DEPOSIT_AMOUNT_30D.
   BONUS_DEPENDENCY_RATIO_LIFETIME    Dependencia de bonus lifetime.
   NGR_PER_BONUS_REAL_30D             NGR_30D / BONUS_ISSUED_30D (eficiencia).
@@ -1037,6 +1104,8 @@ def main():
     sa = bloco_1_2_metricas_30d(sa, snapshot_date=SNAPSHOT_DATE)
     sa = bloco_3_top_jogos_e_temporal(sa, snapshot_date=SNAPSHOT_DATE)
     sa = bloco_5b_btr_bonus(sa, snapshot_date=SNAPSHOT_DATE)
+    # PII (first_name/last_name) — pedido head 08/05/2026, destino: CSV Slack apenas
+    sa = enriquecer_nomes_pii(sa)
     log.info(f"Enriquecimento OK — A+S final: {len(sa):,} linhas x {len(sa.columns)} cols")
     log.info(f"  Base full pro Smartico: {len(df_full):,} linhas x {len(df_full.columns)} cols")
 
