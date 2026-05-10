@@ -60,6 +60,7 @@ COLS_BLOCO_1_2 = [
     "AVG_DEPOSIT_TICKET_30D", "AVG_DEPOSIT_TICKET_LIFETIME",
     "BET_AMOUNT_30D", "BET_COUNT_30D", "AVG_BET_TICKET_30D",
     "AVG_DEPOSIT_TICKET_TIER", "AVG_BET_TICKET_TIER",
+    "GGR_LIFETIME", "NGR_LIFETIME",
 ]
 COLS_BLOCO_3 = [
     "PRODUCT_MIX", "TOP_PROVIDER_1", "TOP_PROVIDER_2",
@@ -235,6 +236,8 @@ def bloco_6_kyc(df: pd.DataFrame, snapshot_date: Optional[str] = None) -> pd.Dat
     # concluido em 2020-2022 podem nunca ter atualizado. Filtro c_ecr_id IN(...)
     # ja restringe a ~10.9k IDs, escaneamento e barato.
     sql_template = f"""
+    -- is_test EXCLUIDO upstream: player_ids vem de multibet.pcr_atual,
+    -- que ja filtra c_test_user=false na construcao. Re-filtrar aqui seria redundante.
     WITH max_dates AS (
         SELECT c_ecr_id, MAX(c_updated_time) AS max_t
         FROM ecr_ec2.tbl_ecr_kyc_level
@@ -383,9 +386,9 @@ def bloco_1_2_metricas_30d(df: pd.DataFrame, snapshot_date: Optional[str] = None
     # do PCR pipeline upstream (08/05/2026) por gap dbt em fct_player_activity_daily.
     # Mapeamento: c_ecr_id<->player_id | c_created_date<->activity_date |
     # c_*_amount em centavos -> /100.0 (BRL) | c_co_*<->cashout_* | NGR=GGR-bonus_issued (proxy).
-    # Filtro is_test: NAO aplicado aqui — player_ids ja vem filtrado do PCR upstream
-    # (multibet.pcr_atual exclui test users na construcao).
     sql_template = f"""
+    -- is_test EXCLUIDO upstream: player_ids vem de multibet.pcr_atual,
+    -- que ja filtra c_test_user=false na construcao. Re-filtrar aqui seria redundante.
     WITH metrics_30d AS (
         SELECT
             s.c_ecr_id AS player_id,
@@ -421,7 +424,18 @@ def bloco_1_2_metricas_30d(df: pd.DataFrame, snapshot_date: Optional[str] = None
         SELECT
             s.c_ecr_id AS player_id,
             COALESCE(SUM(s.c_deposit_success_count), 0)          AS deposit_count_lifetime,
-            COALESCE(SUM(s.c_deposit_success_amount), 0) / 100.0 AS deposit_amount_lifetime
+            COALESCE(SUM(s.c_deposit_success_amount), 0) / 100.0 AS deposit_amount_lifetime,
+            -- GGR/NGR lifetime — feature pedida pela operacao VIP em 09/05/2026.
+            -- Mesma definicao do bloco 30d para coerencia (NGR proxy = GGR - bonus_issued).
+            COALESCE(SUM(
+                (s.c_casino_realcash_bet_amount - s.c_casino_realcash_win_amount)
+              + (s.c_sb_realcash_bet_amount     - s.c_sb_realcash_win_amount    )
+            ), 0) / 100.0 AS ggr_lifetime,
+            COALESCE(SUM(
+                (s.c_casino_realcash_bet_amount - s.c_casino_realcash_win_amount)
+              + (s.c_sb_realcash_bet_amount     - s.c_sb_realcash_win_amount    )
+              -  s.c_bonus_issued_amount
+            ), 0) / 100.0 AS ngr_lifetime
         FROM bireports_ec2.tbl_ecr_wise_daily_bi_summary s
         WHERE s.c_ecr_id IN ({{ids_str}})
         GROUP BY s.c_ecr_id
@@ -432,6 +446,7 @@ def bloco_1_2_metricas_30d(df: pd.DataFrame, snapshot_date: Optional[str] = None
         m.deposit_count_30d, m.deposit_amount_30d,
         m.withdrawal_count_30d, m.withdrawal_amount_30d,
         m.bet_amount_30d, m.bet_count_30d,
+        l.ggr_lifetime, l.ngr_lifetime,
         CASE WHEN m.deposit_count_30d > 0
              THEN m.deposit_amount_30d * 1.0 / m.deposit_count_30d
              ELSE NULL END AS avg_deposit_ticket_30d,
@@ -460,6 +475,8 @@ def bloco_1_2_metricas_30d(df: pd.DataFrame, snapshot_date: Optional[str] = None
         "withdrawal_amount_30d": "WITHDRAWAL_AMOUNT_30D",
         "bet_amount_30d": "BET_AMOUNT_30D",
         "bet_count_30d": "BET_COUNT_30D",
+        "ggr_lifetime": "GGR_LIFETIME",
+        "ngr_lifetime": "NGR_LIFETIME",
         "avg_deposit_ticket_30d": "AVG_DEPOSIT_TICKET_30D",
         "avg_bet_ticket_30d": "AVG_BET_TICKET_30D",
         "avg_deposit_ticket_lifetime": "AVG_DEPOSIT_TICKET_LIFETIME",
@@ -471,9 +488,11 @@ def bloco_1_2_metricas_30d(df: pd.DataFrame, snapshot_date: Optional[str] = None
     df = df.merge(metrics, on="player_id", how="left")
 
     # Players sem atividade 30d ficam com 0 (nao NaN) nas metricas absolutas
+    # GGR_LIFETIME / NGR_LIFETIME idem — player ativo no PCR mas sem hist em bireports vai 0.
     cols_zero = ["GGR_30D", "NGR_30D", "DEPOSIT_AMOUNT_30D", "DEPOSIT_COUNT_30D",
                  "WITHDRAWAL_AMOUNT_30D", "WITHDRAWAL_COUNT_30D",
-                 "BET_AMOUNT_30D", "BET_COUNT_30D"]
+                 "BET_AMOUNT_30D", "BET_COUNT_30D",
+                 "GGR_LIFETIME", "NGR_LIFETIME"]
     for c in cols_zero:
         if c in df.columns:
             df[c] = df[c].fillna(0)
@@ -676,8 +695,14 @@ def bloco_3_top_jogos_e_temporal(df: pd.DataFrame, snapshot_date: Optional[str] 
         jogos["vendor_id"] = jogos["vendor_id"].fillna(jogos.get("vendor_id_pref"))
         jogos = jogos.drop(columns=["game_desc_pref", "vendor_id_pref", "prefix"], errors="ignore")
 
-    # Ainda sem nome → usa game_id como fallback final
-    jogos["game_desc"] = jogos["game_desc"].fillna(jogos["game_id_str"])
+    # Ainda sem nome → marca como DESCONHECIDO_<id> + warning para auditoria.
+    # Padrao explicito evita que ID cru (ex: "8842") apareca como nome de jogo
+    # no CSV final — stakeholder VIP reclamou em 09/05/2026 sobre TOP_GAME_1 com IDs.
+    sem_nome_final = jogos["game_desc"].isna()
+    if sem_nome_final.any():
+        ex = jogos.loc[sem_nome_final, "game_id_str"].head(5).tolist()
+        log.warning(f"  {sem_nome_final.sum()} game_ids sem nome no game_image_mapping (ex: {ex}) — marcando DESCONHECIDO_<id>")
+    jogos["game_desc"] = jogos["game_desc"].fillna("DESCONHECIDO_" + jogos["game_id_str"].astype(str))
 
     # Renomeia agregados sportsbook (altenar-games etc) pra 'Sportsbook' no display
     is_sportsbook = (jogos["game_id_str"].str.lower().str.startswith("altenar")
@@ -778,8 +803,15 @@ def bloco_3_top_jogos_e_temporal(df: pd.DataFrame, snapshot_date: Optional[str] 
 
 
 # ============================================================
-# BLOCO 5b — BTR + bonus extras (1 query Athena unificada)
+# BLOCO 5b — BTR + bonus extras (2 queries Athena: bireports + fund_ec2)
 # ============================================================
+# NOTA 09/05/2026: removida a funcao _puxar_btr_turnedreal_30d que tentava
+# replicar scripts/btr_oficial_20abr.py (c_txn_type=20). Sanity check
+# (scripts/sanity_btr_30d_vs_oficial.py) provou que a metrica calculada por
+# essa query e BONUS EMITIDO, nao bonus turned real (BTR=100% sempre).
+# Tech-debt formal: identificar o tipo de transacao correto antes de reativar.
+
+
 def bloco_5b_btr_bonus(df: pd.DataFrame, snapshot_date: Optional[str] = None) -> pd.DataFrame:
     """
     Adiciona 7 colunas de BTR e bonus avancado.
@@ -801,10 +833,16 @@ def bloco_5b_btr_bonus(df: pd.DataFrame, snapshot_date: Optional[str] = None) ->
     CSV 07/05). Mesmo motivo do fix no PCR upstream (commit dfaf4ed).
     Conversao: valores em centavos / 100.0 retornam BRL.
 
-    LIMITACAO conhecida: bireports NAO tem campo `bonus_turned_real` (bonus
-    convertido em saldo real apos cumprir rollover). Logo, BTR_30D / BTR_CASINO_30D
-    / BTR_SPORT_30D ficam NULL nesta versao. Para reativar, precisa cruzar com
-    bonus_ec2 (txn_type rules). Outras colunas estao 100% computaveis na bireports.
+    LIMITACAO PARCIAL: bireports NAO tem campo `bonus_turned_real` (bonus
+    convertido em saldo real apos cumprir rollover). Mas a fonte oficial do BTR
+    no projeto e `fund_ec2.tbl_real_fund_txn JOIN tbl_realcash_sub_fund_txn`
+    com `c_txn_type = 20` (validado em scripts/btr_oficial_20abr.py — 287K txns
+    historicas, R$1.36M em 90d). Por isso a partir de 09/05/2026 BTR_30D total
+    e calculado via 2a query em fund_ec2.
+
+    BTR_CASINO_30D / BTR_SPORT_30D ainda ficam NULL: a sub-fund nao tem
+    coluna direta de produto (CASINO/SPORT). Reativar requer cruzar com
+    bonus_ec2.tbl_bonus_rule.product_type — tech-debt formal pro proximo handoff.
 
     Janela: 30d rolling ate D-1 (consistente com Bloco 1+2).
     """
@@ -829,8 +867,9 @@ def bloco_5b_btr_bonus(df: pd.DataFrame, snapshot_date: Optional[str] = None) ->
     # Migrado para bireports_ec2.tbl_ecr_wise_daily_bi_summary.
     # bonus_turnedreal NAO existe em bireports -> retornamos 0; downstream
     # nulifica BTR_*. Demais cols mapeadas direto (BRL via /100.0).
-    # Filtro is_test: NAO aplicado aqui — player_ids ja vem filtrado do PCR upstream.
     sql_template = f"""
+    -- is_test EXCLUIDO upstream: player_ids vem de multibet.pcr_atual,
+    -- que ja filtra c_test_user=false na construcao. Re-filtrar aqui seria redundante.
     WITH b30 AS (
         SELECT
             s.c_ecr_id AS player_id,
@@ -905,18 +944,24 @@ def bloco_5b_btr_bonus(df: pd.DataFrame, snapshot_date: Optional[str] = None) ->
 
     raw["BONUS_ISSUED_30D"] = issued
 
-    # BTR_30D = bonus_turnedreal / bonus_issued
-    # IMPORTANTE: bireports_ec2 nao expoe bonus_turned_real diretamente. Acima
-    # forcamos `turned = 0` na query, o que daria BTR=0 para qualquer player
-    # com bonus emitido — *enganoso* (sugere "nao virou real" em vez de "nao temos
-    # essa metrica"). Por isso aqui nulificamos explicitamente as 3 colunas BTR_*
-    # e adicionamos log de aviso. Reativar quando integrar bonus_ec2.
+    # BTR_30D = bonus_turned_real / bonus_issued
+    # ACHADO CRITICO 09/05/2026 (sanity check scripts/sanity_btr_30d_vs_oficial.py):
+    # A "query oficial" do projeto (btr_oficial_20abr.py, sync_all_aquisicao/btr.sql)
+    # que filtra tbl_realcash_sub_fund_txn por c_txn_type=20 mede BONUS EMITIDO
+    # (ISSUE_BONUS = "emitir bonus"), NAO bonus_turned_real. Validado: o agregado
+    # 30d do A+S deu R$ 918.921 na sub-fund vs R$ 919.045 em bireports.c_bonus_issued
+    # (delta de 0.01% — basicamente o filtro de test_users). Dividir um pelo outro
+    # da BTR=100% sempre, o que NAO e a metrica de eficiencia esperada.
+    #
+    # Nesta versao mantemos BTR_*_30D = NULL ate identificar o tipo de transacao
+    # correto que representa "bonus convertido em saldo real apos rollover".
+    # Tech-debt formal pro proximo handoff (junto com split CASINO/SPORT).
     issued_safe = issued.replace(0, np.nan)
     raw["BTR_30D"] = np.nan
     raw["BTR_CASINO_30D"] = np.nan
     raw["BTR_SPORT_30D"]  = np.nan
-    _ = turned, realbet, casino_rb, sport_rb  # vars carregadas mas nao usadas (placeholder ate bonus_ec2)
-    log.info("  BTR_*_30D = NULL (bonus_turned_real ausente em bireports_ec2 — pendente integrar bonus_ec2)")
+    _ = turned, realbet, casino_rb, sport_rb  # placeholders ate identificar txn type real
+    log.info("  BTR_*_30D = NULL (auditoria 09/05 mostrou que c_txn_type=20 mede bonus emitido, nao turned-real — tech-debt formal)")
 
     # BONUS_DEPENDENCY_RATIO_LIFETIME
     deposit_lt_safe = deposit_lt.replace(0, np.nan)

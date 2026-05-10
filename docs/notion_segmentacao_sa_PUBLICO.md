@@ -42,7 +42,7 @@ A base diária tem três blocos de informação por jogador:
 Quem é o jogador (com primeiro nome e sobrenome para identificação rápida pelo operador), qual rating tem, em que tier comportamental cai, qual o status atual da conta (ativa, fechada, em pausa de Jogo Responsável).
 
 ### Bloco 2 — Métricas de valor e atividade
-Quanto trouxe de receita (GGR/NGR), quanto depositou e sacou, quantas apostas fez, qual ticket médio — em duas janelas: **últimos 30 dias** (sinal recente, gatilho operacional) e **últimos 90 dias** (foto consolidada, baseline de tier).
+Quanto trouxe de receita (GGR/NGR), quanto depositou e sacou, quantas apostas fez, qual ticket médio — em três janelas: **últimos 30 dias** (sinal recente, gatilho operacional), **últimos 90 dias** (foto consolidada, baseline de tier) e **lifetime** (acumulado desde a abertura da conta — métrica central para Tier S, valor histórico total do jogador).
 
 ### Bloco 3 — Comportamento e contexto
 Em que ciclo de vida está (ativo, em risco de churn, dormente), qual produto prefere (cassino, esportes, misto), em qual dia/horário costuma jogar, top jogos do segmento dele, dependência de bônus, sinais de abuso e nível de KYC.
@@ -59,7 +59,7 @@ Em que ciclo de vida está (ativo, em risco de churn, dormente), qual produto pr
 | **Tier de Risco Comportamental** | Muito Bom / Bom / Mediano / Ruim / Muito Ruim | Mede a *qualidade* do jogo (ortogonal ao valor) — um S pode ser "Ruim" se for bonus-chaser |
 | **Status de Conta** | Ativa / Fechada / Pausa Jogo Responsável / Fraude | Filtro operacional — quem pode receber bônus, quem está bloqueado, quem está suspenso temporariamente |
 | **Status de Ciclo de Vida** | Novo / Ativo / Em Risco / Churned / Dormente | Quando agir — ativo recente recebe ação diferente de quem sumiu há 60 dias |
-| **GGR / NGR (30d e 90d)** | Receita bruta e líquida gerada | Valor financeiro produzido — base para ROI por ação de CRM |
+| **GGR / NGR (30d, 90d e lifetime)** | Receita bruta e líquida gerada — janela curta (gatilho), janela longa (baseline) e acumulado total (valor histórico) | Valor financeiro produzido — base para ROI por ação de CRM. Lifetime é especialmente crítico para o tier S (Whale): o valor acumulado define a engrenagem da régua VIP |
 | **Volume de depósitos / saques (30d e 90d)** | Quanto o jogador movimentou | Indicador de saúde financeira da conta |
 | **Ticket médio de depósito** | Valor médio por depósito | Ajuda a calibrar valor de bônus (não dá bônus de R$ 500 para quem deposita R$ 50) |
 | **Top jogos / Top providers do tier** | Jogos e fornecedores favoritos do segmento | Insumo para ações temáticas (free spins do jogo certo, cashback no provider certo) |
@@ -67,7 +67,7 @@ Em que ciclo de vida está (ativo, em risco de churn, dormente), qual produto pr
 | **Sinal de abuso de bônus** | 1 se o comportamento aponta abusador / promo-chaser | Trava CRM agressivo em quem estraga o ROI de bônus |
 | **Nível de KYC** | KYC 0 a KYC 3 | Limita ações regulamentadas (saque, depósito, valor de bônus) |
 | **Restrições regulatórias** | Auto-exclusão / pausa cool-off / produto bloqueado | Filtros obrigatórios — não envia oferta para quem está em Jogo Responsável |
-| **BTR (Bonus Turnover Ratio)** | Quanto do bônus virou dinheiro real (turnover) | Mede eficiência do bônus — BTR alto significa bônus rolando, BTR baixo significa bônus parado |
+| **BTR (Bonus Turnover Ratio)** | Quanto do bônus virou saldo real após cumprir rollover | Mede eficiência do bônus — BTR alto significa bônus convertido em saldo real, BTR baixo significa bônus parado ou expirado |
 
 ---
 
@@ -95,30 +95,6 @@ O fluxo típico de uso é:
 5. **Mede o resultado** no fim da janela de campanha — comparando com o snapshot do dia da ação.
 
 A coluna `Tendência` é o gatilho mais valioso: identifica os ~5% da base que estão **prestes a mudar de tier** — exatamente onde CRM tem mais alavanca.
-
----
-
-## Roadmap de evolução
-
-A base evolui em **três versões progressivas**, cada uma adicionando colunas conforme entram em produção:
-
-### v2.1 — Foco em estado e risco regulatório
-
-Adiciona o ciclo de vida do jogador (novo / ativo / em risco / churned / dormente), os flags de status regulatório (auto-exclusão, restrição de produto, nível de KYC) e o sinal de abuso de bônus derivado da Matriz de Risco.
-
-**Ganho:** o operador passa a saber, na linha do jogador, **se pode agir** (filtro regulatório) e **em que momento ele está** (filtro de ciclo).
-
-### v2.2 — Foco em valor recente e ticket
-
-Adiciona as métricas de **30 dias** (GGR, NGR, depósito, saque, aposta — em volume e contagem) e os tickets médios — tanto do próprio jogador quanto a média do tier dele.
-
-**Ganho:** o operador para de olhar só o consolidado de 90d e passa a ver o **sinal recente**, o que muda totalmente a leitura — um S que veio caindo nos últimos 30d demanda ação diferente de um S estável.
-
-### v2.3 — Foco em personalização e timing
-
-Adiciona top jogos e top providers do tier, dia e horário dominantes, último produto jogado, e métricas de bônus expandidas (BTR por vertical, último bônus emitido, dependência de bônus lifetime).
-
-**Ganho:** as ações deixam de ser genéricas (push às 19h, free spin no jogo da moda) e passam a ser **calibradas pelo perfil do tier** (push no horário onde aquele tier joga mais, free spin no provider que ele realmente usa).
 
 ---
 
@@ -182,4 +158,4 @@ A entrega tem três camadas de segurança automatizadas:
 
 A Segmentação A+S é a **base de trabalho diária do CRM** — tudo que ele precisa saber sobre os 8% mais valiosos da operação, em uma única lista, com janelas estáveis, regras claras e histórico auditável.
 
-A versão final entrega **59 colunas** combinando identificação, rating, valor, comportamento, ciclo, jogos preferidos, status regulatório e sinais de risco — pronta para virar campanha, régua, ou decisão estratégica do head de operação.
+A versão atual entrega **61 colunas** combinando identificação (com nome para identificação operacional), rating, valor (30d / 90d / lifetime), comportamento, ciclo, jogos preferidos, status regulatório, eficiência de bônus (BTR) e sinais de risco — pronta para virar campanha, régua, ou decisão estratégica do head de operação.

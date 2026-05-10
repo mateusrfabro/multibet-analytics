@@ -160,6 +160,9 @@ CREATE TABLE IF NOT EXISTS multibet.segmentacao_sa_diaria (
     avg_bet_ticket_30d          NUMERIC(15,4),
     avg_deposit_ticket_tier     NUMERIC(15,2),
     avg_bet_ticket_tier         NUMERIC(15,4),
+    -- LIFETIME (operacao VIP, 09/05/2026)
+    ggr_lifetime                NUMERIC(15,2),
+    ngr_lifetime                NUMERIC(15,2),
     -- Bloco 3: top jogos/providers/temporal por TIER
     top_provider_1              VARCHAR(60),
     top_provider_2              VARCHAR(60),
@@ -393,16 +396,18 @@ def enriquecer_nomes_pii(df: pd.DataFrame) -> pd.DataFrame:
         df["last_name"] = None
         return df
 
-    # IN list direto: ecr_ids vem do PCR (interno, BIGINT controlado),
-    # sem risco de injection. Casts pra int garantem tipo limpo.
-    in_list = ", ".join(str(int(x)) for x in ecr_ids)
-    sql = f"""
+    # Usa o helper _run_athena_in_batches do enriquecimento (mesmo padrao dos outros
+    # blocos) — protege contra crescimento da base no futuro (limite 256KB IN list
+    # do Athena), mantem consistencia de logs por batch e permite retry granular.
+    from pipelines.segmentacao_sa_enriquecimento import _run_athena_in_batches
+    sql_template = """
     -- Enriquecimento PII para CSV Slack — first_name/last_name ps_bi.dim_user
+    -- ecr_ids vem do PCR (interno, BIGINT controlado, sem risco de injection).
     SELECT ecr_id, first_name, last_name
     FROM ps_bi.dim_user
-    WHERE ecr_id IN ({in_list})
+    WHERE ecr_id IN ({ids_str})
     """
-    nomes = query_athena(sql, database="ps_bi")
+    nomes = _run_athena_in_batches(sql_template, ecr_ids, database="ps_bi", batch_size=4000)
     log.info(f"  -> {len(nomes):,} nomes recuperados (de {len(ecr_ids):,} ecr_ids)")
 
     if nomes.empty:
@@ -586,6 +591,9 @@ def _migrar_schema_v2():
         ("avg_bet_ticket_30d",          "NUMERIC(15,4)"),
         ("avg_deposit_ticket_tier",     "NUMERIC(15,2)"),
         ("avg_bet_ticket_tier",         "NUMERIC(15,4)"),
+        # LIFETIME (operacao VIP, 09/05/2026)
+        ("ggr_lifetime",                "NUMERIC(15,2)"),
+        ("ngr_lifetime",                "NUMERIC(15,2)"),
         # Bloco 3
         ("top_provider_1",              "VARCHAR(60)"),
         ("top_provider_2",              "VARCHAR(60)"),
@@ -647,6 +655,8 @@ def gravar_segmentacao(df: pd.DataFrame, snapshot_date: str):
         "avg_deposit_ticket_30d", "avg_deposit_ticket_lifetime",
         "bet_amount_30d", "bet_count_30d", "avg_bet_ticket_30d",
         "avg_deposit_ticket_tier", "avg_bet_ticket_tier",
+        # LIFETIME (operacao VIP, 09/05/2026)
+        "ggr_lifetime", "ngr_lifetime",
         # Bloco 3
         "top_provider_1", "top_provider_2", "top_game_1", "top_game_2",
         "top_game_1_tier_turnover", "top_game_2_tier_turnover", "top_game_3_tier_turnover",
@@ -725,6 +735,8 @@ def gravar_segmentacao(df: pd.DataFrame, snapshot_date: str):
             _safe_float(r.get("AVG_BET_TICKET_30D"), 4),
             _safe_float(r.get("AVG_DEPOSIT_TICKET_TIER")),
             _safe_float(r.get("AVG_BET_TICKET_TIER"), 4),
+            _safe_float(r.get("GGR_LIFETIME")),
+            _safe_float(r.get("NGR_LIFETIME")),
             _safe_str(r.get("TOP_PROVIDER_1"), 60),
             _safe_str(r.get("TOP_PROVIDER_2"), 60),
             _safe_str(r.get("TOP_GAME_1"), 120),
@@ -799,14 +811,28 @@ def gerar_csv(df: pd.DataFrame, snapshot_date: str) -> tuple[Path, Path]:
     }
     df_csv = df_csv.rename(columns=rename_map)
 
-    # Ordem das 59 colunas (57 Castrin + first_name/last_name pedido pelo head 08/05/2026).
+    # P1 (auditor 10/05/2026): cast Int64 em IDs evita regressao de "30449382,0"
+    # vinda de Decimal/float (psycopg2 retorna NUMERIC como Decimal -> pandas cast
+    # implicito para float64). external_id e player_id sao IDs inteiros — sem
+    # decimal — e quem cola no Smartico/Excel quer o numero limpo.
+    for id_col in ("external_id", "player_id", "affiliate_id"):
+        if id_col in df_csv.columns:
+            # affiliate_id pode ser VARCHAR ou misto: usa Int64 se numerico, senao mantem
+            try:
+                df_csv[id_col] = pd.to_numeric(df_csv[id_col], errors="raise").astype("Int64")
+            except (ValueError, TypeError):
+                pass
+
+    # Ordem das 61 colunas (57 Castrin + first_name/last_name 08/05 + GGR/NGR_LIFETIME 09/05).
     # PII (nomes) entram no bloco IDENTIFICACAO logo apos external_id, antes de
     # registration_date — destino exclusivo: CSV Slack (CRM). Nao persiste em DB.
+    # GGR/NGR_LIFETIME (operacao VIP, 09/05/2026) agrupados com NGR_90D.
     cols_csv = [
         "player_id", "external_id", "first_name", "last_name",
         "registration_date", "affiliate_id",
         "PVS_SCORE", "PCR_RATING", "LIFECYCLE_STATUS", "RECENCY_DAYS",
         "GGR_30D", "NGR_30D", "NGR_90D",
+        "GGR_LIFETIME", "NGR_LIFETIME",
         "DEPOSIT_AMOUNT_30D", "DEPOSIT_COUNT_30D",
         "AVG_DEPOSIT_TICKET_30D", "AVG_DEPOSIT_TICKET_TIER",
         "BET_AMOUNT_30D", "BET_COUNT_30D",
@@ -832,17 +858,17 @@ def gerar_csv(df: pd.DataFrame, snapshot_date: str) -> tuple[Path, Path]:
         "category",
     ]
 
-    # Validacao defensiva: garante que TODAS as 57 colunas existem (falha rapido)
+    # Validacao defensiva: garante que TODAS as 61 colunas existem (falha rapido)
     missing = [c for c in cols_csv if c not in df_csv.columns]
     if missing:
         raise RuntimeError(f"CSV missing colunas: {missing}")
-    if len(cols_csv) != 59:
-        raise RuntimeError(f"CSV deveria ter 59 colunas — tem {len(cols_csv)}")
+    if len(cols_csv) != 61:
+        raise RuntimeError(f"CSV deveria ter 61 colunas — tem {len(cols_csv)}")
 
     df_csv[cols_csv].sort_values("PVS_SCORE", ascending=False).to_csv(
         csv_path, index=False, sep=";", decimal=",", encoding="utf-8-sig"
     )
-    log.info(f"CSV salvo: {csv_path} ({len(df):,} linhas x 59 cols — Castrin + first_name/last_name)")
+    log.info(f"CSV salvo: {csv_path} ({len(df):,} linhas x 61 cols — Castrin + first_name/last_name + GGR/NGR_LIFETIME)")
 
     # Legenda — 57 colunas alinhadas EXATO com CSV de referencia do Castrin
     legenda = f"""LEGENDA — players_segmento_SA_{snapshot_date}
@@ -884,6 +910,9 @@ METRICAS DE VALOR (BRL — 30d e 90d)
 
   GGR_30D / NGR_30D                  Receita bruta/liquida ultimos 30 dias.
   NGR_90D                            NGR consolidado 90d (baseline do PCR).
+  GGR_LIFETIME / NGR_LIFETIME        Receita bruta/liquida acumulada DESDE A
+                                     ABERTURA da conta. Metrica central para
+                                     Tier S — pedido da operacao VIP em 09/05/2026.
   DEPOSIT_AMOUNT_30D / COUNT_30D     Volume e numero de depositos 30d.
   AVG_DEPOSIT_TICKET_30D             Ticket medio depositos 30d (do jogador).
   AVG_DEPOSIT_TICKET_TIER            Ticket medio depositos 30d do TIER
@@ -910,16 +939,43 @@ COMPORTAMENTO E PRODUTO
                                      TARDE (12-17h) | NOITE (18-23h).
   LAST_PRODUCT_PLAYED                Ultimo produto jogado pelo jogador.
 
+  >>> ATENCAO (gap conhecido): TOP_*/DOMINANT_* refletem janela 06/02 a 06/04
+  >>> enquanto a fato dbt `ps_bi.fct_casino_activity_*` permanece parada (mesmo
+  >>> gap que afetou Bloco 1+2 e foi corrigido). Granularidade EH POR TIER
+  >>> (rating x classificacao_risco), NAO por jogador — todos os jogadores do
+  >>> mesmo tier compartilham os mesmos top jogos / time bucket. Quando aparecer
+  >>> "DESCONHECIDO_<id>" significa que o jogo nao tem nome em multibet.game_image_mapping
+  >>> (ID cru visivel para auditoria — pingar Mauro/Gusta para popular mapping).
+
 ==============================================================
 BONUS E BTR (Bonus Turnover Ratio)
 ==============================================================
 
-  BONUS_ISSUED_30D                   Bonus emitido 30d (BRL).
-  BTR_30D                            VAZIO temporariamente. Requer bonus_turned_real
-                                     que nao esta disponivel em bireports_ec2 desde
-                                     a migracao do dbt (06/04/2026). Reativacao
-                                     pendente: integracao com bonus_ec2.
-  BTR_CASINO_30D / BTR_SPORT_30D     VAZIO temporariamente (mesma razao).
+  BONUS_ISSUED_30D                   Bonus emitido 30d (BRL). Fonte:
+                                     bireports_ec2.tbl_ecr_wise_daily_bi_summary.
+                                     c_bonus_issued_amount.
+  BTR_30D / BTR_CASINO_30D /         VAZIO. Investigacao do dia (10/05/2026)
+  BTR_SPORT_30D                      identificou a fonte canonica de BTR no
+                                     projeto: ps_bi.fct_player_activity_daily.
+                                     bonus_turnedreal_base + casino/sport split
+                                     nativo. Validado empiricamente em
+                                     `.tmp_ssm/validate_btr_step6.py` pelo head
+                                     em maio/2026. Universo: 136.870 players,
+                                     R$ 14M total (jun/25 a 06/04/26). Pico em
+                                     dez/25 com R$ 7,6M.
+                                     PROBLEMA: a tabela esta em GAP DBT desde
+                                     06/04/2026 (mesmo gap que afetou Bloco 1+2
+                                     e foi migrado para bireports_ec2). Em
+                                     abr/2026 ja estava em queda livre (R$ 96k,
+                                     1% do esperado). Em maio/2026 nao tem dado.
+                                     bireports_ec2 NAO expoe bonus_turnedreal —
+                                     por isso nao ha fallback para BTR.
+                                     UNICA SOLUCAO: resolver o gap dbt em
+                                     fct_player_activity_daily (acao Mauro/
+                                     Gusta — ja listado em squad_update_2026-04-25.md).
+                                     Quando o dbt voltar, reativacao e trivial
+                                     (~10 linhas em pipelines/segmentacao_sa_
+                                     enriquecimento.py:bloco_5b_btr_bonus).
   LAST_BONUS_DATE / LAST_BONUS_TYPE  Ultima data com bonus emitido (180d) / tipo
                                      proxy 'CASH' (bonus_ec2 nao integrado ainda).
   BONUS_DEPENDENCY_RATIO_30D         BONUS_ISSUED_30D / DEPOSIT_AMOUNT_30D.
@@ -1108,6 +1164,26 @@ def main():
     sa = enriquecer_nomes_pii(sa)
     log.info(f"Enriquecimento OK — A+S final: {len(sa):,} linhas x {len(sa.columns)} cols")
     log.info(f"  Base full pro Smartico: {len(df_full):,} linhas x {len(df_full.columns)} cols")
+
+    # SANITY COVERAGE A+S — alerta se algum sinal critico colapsar
+    # (ex: gap dbt, Athena devolvendo vazio, fonte derrubada). Antes desse log,
+    # uma falha silenciosa so seria detectada via reclamacao do stakeholder
+    # — agora dispara log.error pra ficar visivel no orquestrador.
+    COVERAGE_ALERT_PCT = 50.0
+    checks = {
+        "DEPOSIT_COUNT_30D > 0": (sa["DEPOSIT_COUNT_30D"] > 0).mean() * 100,
+        "KYC_STATUS notna":       sa["KYC_STATUS"].notna().mean() * 100,
+        "TOP_GAME_1 notna":       sa["TOP_GAME_1"].notna().mean() * 100,
+        "first_name notna":       sa["first_name"].notna().mean() * 100,
+        "GGR_LIFETIME > 0":       (sa["GGR_LIFETIME"] > 0).mean() * 100,
+        "BONUS_ISSUED_30D > 0":   (sa["BONUS_ISSUED_30D"] > 0).mean() * 100,
+    }
+    log.info("=" * 70)
+    log.info("SANITY COVERAGE A+S")
+    log.info("=" * 70)
+    for k, v in checks.items():
+        fn = log.error if v < COVERAGE_ALERT_PCT and k != "BONUS_ISSUED_30D > 0" else log.info
+        fn(f"  {k}: {v:.1f}%")
 
     # FIX A1 (best-practices 28/04): valida que TODAS as 32 colunas v2 existem
     # antes de gravar/exportar — evita NULL silencioso por mudanca de naming.
