@@ -138,9 +138,14 @@ Arquivo: [`pipelines/risk_matrix_pipeline.py`](pipelines/risk_matrix_pipeline.py
 | `sql/risk_matrix/REINVEST_PLAYER.sql` | [`sql/risk_matrix/REINVEST_PLAYER.sql`](sql/risk_matrix/REINVEST_PLAYER.sql) |
 | `sql/risk_matrix/FAST_CASHOUT.sql` | [`sql/risk_matrix/FAST_CASHOUT.sql`](sql/risk_matrix/FAST_CASHOUT.sql) |
 | `sql/risk_matrix/ZERO_RISK_PLAYER.sql` | [`sql/risk_matrix/ZERO_RISK_PLAYER.sql`](sql/risk_matrix/ZERO_RISK_PLAYER.sql) |
+| `sql/risk_matrix/POTENCIAL_ABUSER.sql` | [`sql/risk_matrix/POTENCIAL_ABUSER.sql`](sql/risk_matrix/POTENCIAL_ABUSER.sql) |
 
-**NAO mudar (15 SQLs nao tocados):**
-REGULAR_DEPOSITOR, PROMO_ONLY, NON_BONUS_DEPOSITOR, PROMO_CHAINER, CASHOUT_AND_RUN, NON_PROMO_PLAYER, ENGAGED_PLAYER, BEHAV_RISK_PLAYER, POTENCIAL_ABUSER, PLAYER_REENGAGED, SLEEPER_LOW_PLAYER, VIP_WHALE_PLAYER, WINBACK_HI_VAL_PLAYER, MULTI_GAME_PLAYER, ROLLBACK_PLAYER.
+**NAO mudar (14 SQLs nao tocados):**
+REGULAR_DEPOSITOR, PROMO_ONLY, NON_BONUS_DEPOSITOR, PROMO_CHAINER, CASHOUT_AND_RUN, NON_PROMO_PLAYER, ENGAGED_PLAYER, BEHAV_RISK_PLAYER, PLAYER_REENGAGED, SLEEPER_LOW_PLAYER, VIP_WHALE_PLAYER, WINBACK_HI_VAL_PLAYER, MULTI_GAME_PLAYER, ROLLBACK_PLAYER.
+
+### Bug descoberto rodando v2.1 em prod (13/05)
+
+`POTENCIAL_ABUSER.sql` quebrou com `COLUMN_NOT_FOUND: 'u.c_created_time' cannot be resolved`. Coluna correta validada: `c_signup_time`. O "fix" de 20/04 que tinha trocado `first_deposit` por `c_created_time` **nunca foi exercitado em prod** — provavelmente o Prefect rodava versao ainda mais antiga (usando proxy de primeiro deposito), por isso ninguem viu o erro ate hoje. Ja corrigido. **IMPORTANTE pro Gusta**: ao subir, garantir que o `POTENCIAL_ABUSER.sql` desta pasta esta na versao com `c_signup_time`.
 
 **Dependencias** (continuam iguais, ja existem no Prefect):
 - `db/athena.py`

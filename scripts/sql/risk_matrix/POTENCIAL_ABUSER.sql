@@ -24,14 +24,16 @@ brand AS (
 ),
 
 -- FIX auditoria 20/04/2026 (critico #3): trocado proxy first_deposit pela data
--- real de signup (ecr_ec2.tbl_ecr.c_created_time). 2 ganhos:
+-- real de signup. Coluna correta validada empiricamente em 13/05/2026:
+-- e `c_signup_time` (NAO `c_created_time` — esta coluna NAO EXISTE em tbl_ecr).
+-- 2 ganhos:
 --   1. Semantica correta: conta criada !== primeiro deposito (podem diferir por dias).
 --   2. Custo: antes escaneava TODO cashier_deposit historico (sem filtro temporal
 --      na CTE) so pra filtrar ultimos 2 dias no qualifying. Agora query enxuta.
 qualifying AS (
   SELECT u.c_ecr_id AS user_id
   FROM ecr_ec2.tbl_ecr u
-  WHERE u.c_created_time >= CURRENT_TIMESTAMP - INTERVAL '2' DAY
+  WHERE u.c_signup_time >= CURRENT_TIMESTAMP - INTERVAL '2' DAY
     AND u.c_partner_id IS NOT NULL
 )
 
