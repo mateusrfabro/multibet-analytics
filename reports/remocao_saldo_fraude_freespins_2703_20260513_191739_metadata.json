@@ -1,0 +1,33 @@
+{
+  "snapshot_hash": "f0516e7516046e53",
+  "timestamp": "20260513_191739",
+  "input_file": "C:\\Users\\NITRO\\Downloads\\Remoção de Saldo - 27_03.xlsx",
+  "data_fraude": "2026-03-27",
+  "qtd_linhas_originais": 3118,
+  "qtd_unicos_processados": 3092,
+  "qtd_mapeados_dim_user": 3092,
+  "qtd_nao_mapeados": 0,
+  "qtd_corrompidos_cientifica": 7,
+  "qtd_com_bonus_2703": 2217,
+  "total_bonus_convertido_brl": 441525.61,
+  "total_saldo_atual_brl": 640323.41,
+  "total_saques_pos_2703_brl": 3659827.06,
+  "distribuicao_risco_remocao": [
+    {
+      "risco_remocao": "SEM_BONUS_2703",
+      "qtd": 879
+    },
+    {
+      "risco_remocao": "OK_REMOVER_TOTAL",
+      "qtd": 855
+    },
+    {
+      "risco_remocao": "DINHEIRO_JA_SACADO",
+      "qtd": 771
+    },
+    {
+      "risco_remocao": "REMOCAO_PARCIAL",
+      "qtd": 587
+    }
+  ]
+}
