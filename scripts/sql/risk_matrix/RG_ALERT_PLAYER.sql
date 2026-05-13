@@ -64,7 +64,7 @@ SELECT
   CAST(br.label_id AS VARCHAR) AS label_id,
   CAST(q.user_id AS VARCHAR)   AS user_id,
   'RG_ALERT_PLAYER'             AS tag,
-  1                              AS score,
+  -1                             AS score,  -- FIX 13/05/2026: +1 -> -1 (compliance Mauro 07/04). Flag-only, impacto numerico negligivel.
   CURRENT_DATE                   AS snapshot_date,
   CURRENT_TIMESTAMP              AS computed_at
 FROM qualifying q

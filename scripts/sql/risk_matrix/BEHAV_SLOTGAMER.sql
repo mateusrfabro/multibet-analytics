@@ -24,15 +24,19 @@ brand AS (
 ),
 
 -- Apostas por produto
+-- FIX 13/05/2026: o WHERE original ja filtrava SO apostas casino (txn_type 27/28/41/43),
+--   entao ratio casino_bets/total_bets ficava sempre ~1.00 -> threshold inocuo.
+--   Agora: total_bets considera TODAS as apostas (casino+SB), casino_bets so casino.
+--   So assim o threshold 90% discrimina.
 bet_by_product AS (
   SELECT
     t.c_ecr_id AS user_id,
     COUNT(*) AS total_bets,
-    COUNT_IF(t.c_product_id = 'CASINO') AS casino_bets
+    COUNT_IF(t.c_txn_type IN (27, 28, 41, 43)) AS casino_bets
   FROM fund_ec2.tbl_real_fund_txn t
   WHERE t.c_start_time >= (SELECT start_ts FROM params)
     AND t.c_start_time <  (SELECT end_ts FROM params)
-    AND t.c_txn_type IN (27, 28, 41, 43) -- apostas casino (exclui SB 59/127)
+    AND t.c_txn_type IN (27, 28, 41, 43, 59, 127) -- todas apostas (casino + SB)
     AND t.c_txn_status = 'SUCCESS'
   GROUP BY t.c_ecr_id
 ),
@@ -47,13 +51,17 @@ has_deposit AS (
     AND d.c_initial_amount > 0
 ),
 
--- Qualifica: >= 70% das apostas sao casino (slots) + tem deposito
+-- FIX 13/05/2026: threshold 0.70 -> 0.90.
+--   Auditoria mostrou cobertura de 60.2% (110.539 jogadores) com 0.70 — a tag
+--   virou ruido. Subindo pra 0.90 e total_bets >= 20 (era 10), o foco volta
+--   pro slotgamer puro: jogador cujo perfil e 90%+ casino com volume real.
+-- Qualifica: >= 90% das apostas sao casino (slots) + >=20 bets + tem deposito
 qualifying AS (
   SELECT bp.user_id
   FROM bet_by_product bp
   JOIN has_deposit hd ON bp.user_id = hd.user_id
-  WHERE bp.total_bets >= 10
-    AND CAST(bp.casino_bets AS DOUBLE) / bp.total_bets >= 0.70
+  WHERE bp.total_bets >= 20
+    AND CAST(bp.casino_bets AS DOUBLE) / bp.total_bets >= 0.90
 )
 
 SELECT

@@ -118,7 +118,7 @@ TAG_SCORES = {
     "REINVEST_PLAYER": 15,
     "NON_PROMO_PLAYER": 10,
     "ENGAGED_PLAYER": 10,
-    "RG_ALERT_PLAYER": 1,
+    "RG_ALERT_PLAYER": -1,
     "BEHAV_RISK_PLAYER": -10,
     "POTENCIAL_ABUSER": -5,
     "PLAYER_REENGAGED": 30,
@@ -329,6 +329,15 @@ def compute_scores(df: pd.DataFrame) -> pd.DataFrame:
             df[col] = 0
         else:
             df[col] = df[col].fillna(0).astype(int)
+
+    # FIX 13/05/2026: non-stacking FAST_CASHOUT + CASHOUT_AND_RUN.
+    #   Sao duas leituras da mesma narrativa "sacar e sumir". Empilhar -25 + -25 = -50
+    #   joga player legitimo direto pra Muito Ruim. Auditoria mostrou 16.536 jogadores
+    #   com ambas (31% dos FC). Quando ambas ativas, mantemos a mais informativa
+    #   (CASHOUT_AND_RUN, que adiciona o sinal "sumiu por 48h+") e zeramos a outra.
+    if "fast_cashout" in df.columns and "cashout_and_run" in df.columns:
+        mask_both = (df["fast_cashout"] != 0) & (df["cashout_and_run"] != 0)
+        df.loc[mask_both, "fast_cashout"] = 0
 
     # Conta quantas tags o jogador tem (qualquer valor != 0)
     df["tags_ativas"] = (df[ALL_TAG_COLUMNS] != 0).sum(axis=1)

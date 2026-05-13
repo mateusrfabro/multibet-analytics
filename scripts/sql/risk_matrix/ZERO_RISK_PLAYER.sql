@@ -49,13 +49,18 @@ avg_cashouts AS (
   GROUP BY c.c_ecr_id
 ),
 
--- Qualifica: avg_cashout dentro de 30% do avg_deposit (equilibrado)
+-- FIX 13/05/2026: regra com tolerancia 30% retornava 0 jogadores (regra inalcancavel,
+--   saque medio sempre divergente do deposito medio em base real). Alargado para 50%
+--   para a tag deixar de ser "dead code" e capturar perfil conservador real.
+--   Score continua 0 (neutro), entao impacto no tier e zero — so flag descritiva.
+
+-- Qualifica: avg_cashout dentro de 50% do avg_deposit (equilibrado, perfil conservador)
 qualifying AS (
   SELECT d.user_id
   FROM avg_deposits d
   JOIN avg_cashouts c ON d.user_id = c.user_id
   WHERE d.avg_deposit > 0
-    AND ABS(c.avg_cashout - d.avg_deposit) / d.avg_deposit <= 0.30
+    AND ABS(c.avg_cashout - d.avg_deposit) / d.avg_deposit <= 0.50
 )
 
 SELECT

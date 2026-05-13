@@ -35,22 +35,31 @@ cashouts AS (
   GROUP BY c.c_ecr_id
 ),
 
--- Atividade pos-saque: depositos ou apostas DEPOIS do ultimo saque
+-- FIX 13/05/2026: regra antes era "qualquer atividade apos ultimo saque" -> 31.2%
+--   da base (57.289 jogadores). Inflacionava tier de qualquer player ativo.
+--   Agora exige >= 3 dias distintos de apostas APOS o ultimo saque (engajamento
+--   sustentado, nao evento isolado).
+
+-- Atividade pos-saque: dias distintos de apostas DEPOIS do ultimo saque
 post_cashout_activity AS (
-  SELECT DISTINCT t.c_ecr_id AS user_id
+  SELECT
+    t.c_ecr_id AS user_id,
+    COUNT(DISTINCT CAST(t.c_start_time AS DATE)) AS active_days_post
   FROM fund_ec2.tbl_real_fund_txn t
   JOIN cashouts co ON t.c_ecr_id = co.user_id
   WHERE t.c_start_time > co.last_cashout_time
     AND t.c_start_time < (SELECT end_ts FROM params)
     AND t.c_txn_status = 'SUCCESS'
     AND t.c_txn_type IN (27, 28, 41, 43, 59, 127) -- apostas
+  GROUP BY t.c_ecr_id
 ),
 
--- Qualifica: sacou E continuou jogando depois
+-- Qualifica: sacou E manteve >=3 dias distintos de atividade depois
 qualifying AS (
   SELECT co.user_id
   FROM cashouts co
   JOIN post_cashout_activity pa ON co.user_id = pa.user_id
+  WHERE pa.active_days_post >= 3
 )
 
 SELECT

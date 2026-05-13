@@ -23,22 +23,43 @@ brand AS (
   GROUP BY c_partner_id
 ),
 
--- Jogadores que sacaram e depois depositaram novamente (reinvestimento)
-cashout_then_deposit AS (
-  SELECT DISTINCT co.c_ecr_id AS user_id
+-- FIX 13/05/2026: regra antes era "qualquer ciclo saque->deposito em 7d" -> 19.3%
+--   da base (35.436 jogadores). Captura qualquer player com ciclo normal.
+--   Agora exige >=2 ciclos distintos (saque + deposito-em-ate-7d, em dois saques
+--   diferentes) — padrao real de reinvestimento, nao evento unico.
+
+-- Saques no periodo
+cashouts AS (
+  SELECT
+    co.c_ecr_id AS user_id,
+    co.c_created_time AS cashout_ts
   FROM cashier_ec2.tbl_cashier_cashout co
-  JOIN cashier_ec2.tbl_cashier_deposit d
-    ON co.c_ecr_id = d.c_ecr_id
-   AND d.c_created_time BETWEEN co.c_created_time AND co.c_created_time + INTERVAL '7' DAY
   WHERE co.c_created_time >= (SELECT start_ts FROM params)
     AND co.c_created_time <  (SELECT end_ts FROM params)
     AND co.c_txn_status = 'co_success'
-    AND d.c_txn_status = 'txn_confirmed_success'
-    AND d.c_initial_amount > 0
+    AND co.c_paid_amount > 0
+),
+
+-- Saques que tiveram deposito subsequente em <= 7 dias
+reinvest_cycles AS (
+  SELECT
+    co.user_id,
+    COUNT(DISTINCT co.cashout_ts) AS n_cycles
+  FROM cashouts co
+  WHERE EXISTS (
+    SELECT 1
+    FROM cashier_ec2.tbl_cashier_deposit d
+    WHERE d.c_ecr_id = co.user_id
+      AND d.c_txn_status = 'txn_confirmed_success'
+      AND d.c_initial_amount > 0
+      AND d.c_created_time >  co.cashout_ts
+      AND d.c_created_time <= co.cashout_ts + INTERVAL '7' DAY
+  )
+  GROUP BY co.user_id
 ),
 
 qualifying AS (
-  SELECT user_id FROM cashout_then_deposit
+  SELECT user_id FROM reinvest_cycles WHERE n_cycles >= 2
 )
 
 SELECT

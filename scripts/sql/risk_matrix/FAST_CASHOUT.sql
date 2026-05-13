@@ -23,6 +23,13 @@ brand AS (
   GROUP BY c_partner_id
 ),
 
+-- FIX 13/05/2026: regra antes (qualquer par dep->saque <1h, com JOIN cartesiano
+--   user_id x user_id) gerou 29.2% cobertura (53.731 jogadores). Whales legitimos
+--   caiam aqui por terem volume alto. Mudanca:
+--     1) Conta OCORRENCIAS distintas, nao apenas existencia.
+--     2) Exige >= 3 pares para ser flagado (captura padrao, nao evento isolado).
+--     3) Pre-filtra com EXISTS p/ reduzir o universo antes do count.
+
 deposits AS (
   SELECT
     d.c_ecr_id AS user_id,
@@ -33,23 +40,30 @@ deposits AS (
     AND d.c_txn_status = 'txn_confirmed_success'
     AND d.c_initial_amount > 0
 ),
-cashouts AS (
+
+-- Para cada deposito, conta se houve saque em ate 1h apos
+deposits_with_fast_cashout AS (
   SELECT
-    c.c_ecr_id AS user_id,
-    c.c_created_time AS cashout_time
-  FROM cashier_ec2.tbl_cashier_cashout c
-  WHERE c.c_created_time >= (SELECT start_ts FROM params)
-    AND c.c_created_time <  (SELECT end_ts FROM params)
-    AND c.c_txn_status = 'co_success'
-    AND c.c_paid_amount > 0
+    d.user_id,
+    d.deposit_time
+  FROM deposits d
+  WHERE EXISTS (
+    SELECT 1
+    FROM cashier_ec2.tbl_cashier_cashout c
+    WHERE c.c_ecr_id = d.user_id
+      AND c.c_txn_status = 'co_success'
+      AND c.c_paid_amount > 0
+      AND c.c_created_time >  d.deposit_time
+      AND c.c_created_time <= d.deposit_time + INTERVAL '1' HOUR
+  )
 ),
 
--- Pares deposito->saque onde saque ocorre dentro de 1h apos deposito
+-- Qualifica: 3+ ocorrencias de deposito-com-saque-rapido
 qualifying AS (
-  SELECT DISTINCT d.user_id
-  FROM deposits d
-  JOIN cashouts c ON d.user_id = c.user_id
-  WHERE c.cashout_time BETWEEN d.deposit_time AND d.deposit_time + INTERVAL '1' HOUR
+  SELECT user_id
+  FROM deposits_with_fast_cashout
+  GROUP BY user_id
+  HAVING COUNT(*) >= 3
 )
 
 SELECT

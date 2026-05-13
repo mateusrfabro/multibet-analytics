@@ -51,27 +51,27 @@ Cada tag é um comportamento identificado automaticamente nos dados. Tags positi
 | VIP Whale | +30 | `RISK_VIP_WHALE_PLAYER` | Jogador de altíssimo valor (GGR elevado + alta frequência) |
 | Reengajado | +30 | `RISK_PLAYER_REENGAGED` | Voltou após 30+ dias inativo e manteve engajamento |
 | Winback Alto Valor | +25 | `RISK_WINBACK_HI_VAL_PLAYER` | Reativado com GGR expressivo |
-| Sustentado | +15 | `RISK_SUSTAINED_PLAYER` | Continua jogando após sacar (não "saca e foge") |
-| Reinvestidor | +15 | `RISK_REINVEST_PLAYER` | Saca e deposita novamente em até 7 dias |
+| Sustentado | +15 | `RISK_SUSTAINED_PLAYER` | Sacou e manteve atividade por 3+ dias depois (engajamento sustentado) |
+| Reinvestidor | +15 | `RISK_REINVEST_PLAYER` | Padrão de 2+ ciclos saque→depósito em até 7 dias |
 | Depositante Regular | +10 | `RISK_REGULAR_DEPOSITOR` | Deposita regularmente (3+ vezes por mês) |
 | Orgânico (sem bônus) | +10 | `RISK_NON_BONUS_DEPOSITOR` | Deposita sem usar bônus |
 | Ativo sem Promo | +10 | `RISK_NON_PROMO_PLAYER` | Ativo na última semana sem usar promoção |
 | Engajado | +10 | `RISK_ENGAGED_PLAYER` | 3 a 10 sessões por dia (nível saudável) |
-| Slot Player | +5 | `RISK_BEHAV_SLOTGAMER` | Focado em slots com depósito (perfil cassino) |
+| Slot Player | +5 | `RISK_BEHAV_SLOTGAMER` | 90%+ das apostas em slots/cassino com depósito (slotgamer puro) |
 | Sazonal | +5 | `RISK_SLEEPER_LOW_PLAYER` | Jogador que aparece em eventos/promoções sazonais |
-| Alerta RG | +1 | `RISK_RG_ALERT_PLAYER` | 10+ sessões/dia — sinal de jogo responsável |
 
 ### Tag Neutra
 
 | Tag | Pontos | Tag no CRM | O que identifica |
 | --- | --- | --- | --- |
-| Zero Risco | 0 | `RISK_ZERO_RISK_PLAYER` | Valor de saque próximo ao de depósito (conservador) |
+| Zero Risco | 0 | `RISK_ZERO_RISK_PLAYER` | Valor médio de saque próximo ao de depósito (perfil conservador, ±50%) |
 
 ### Tags Negativas (sinais de risco)
 
 | Tag | Pontos | Tag no CRM | O que identifica |
 | --- | --- | --- | --- |
-| Saque Rápido | -25 | `RISK_FAST_CASHOUT` | Deposita e saca em menos de 1 hora |
+| Saque Rápido | -25 | `RISK_FAST_CASHOUT` | Padrão de 3+ depósitos seguidos de saque em menos de 1h |
+| Alerta RG | -1 | `RISK_RG_ALERT_PLAYER` | 10+ sessões/dia em 5+ dias (sinal de Jogo Responsável) |
 | Cashout & Run | -25 | `RISK_CASHOUT_AND_RUN` | Usa bônus, saca e desaparece por 48h+ |
 | Só Promoção | -15 | `RISK_PROMO_ONLY` | Só deposita quando tem promoção (80%+) |
 | Rollback Alto | -15 | `RISK_ROLLBACK_PLAYER` | Taxa de cancelamentos acima de 10% |
@@ -252,8 +252,9 @@ Esse jogador é classificado como "Bom" (score 51–75) e tem 3 comportamentos p
 | Fase | O que muda | Status |
 | --- | --- | --- |
 | ~~**v2.3**~~ | ~~Integração automática com CRM via API~~ | **Entregue (abril/2026)** |
-| **v2.1** | Adicionar tags específicas de apostas esportivas | Planejado |
-| **v2.2** | Adicionar tags de fraude avançada (velocidade de transações, abuso de free spins) | Planejado |
+| ~~**v2.1**~~ | ~~Ajustes de discriminação: endurecimento de tags genéricas (Slot Player, Sustentado, Reinvestidor, Saque Rápido), revival de Zero Risco, correção de compliance do Alerta RG~~ | **Entregue (maio/2026)** |
+| **v2.2** | Adicionar tags específicas de apostas esportivas | Planejado |
+| **v2.3** | Adicionar tags de fraude avançada (velocidade de transações, abuso de free spins) | Planejado |
 | **v3.0** | Score com suavização temporal (média móvel) + scoring gradual por intensidade | Planejado |
 
 ---
@@ -264,7 +265,7 @@ Esse jogador é classificado como "Bom" (score 51–75) e tem 3 comportamentos p
 | --- | --- |
 | **Atualização** | Diária (automatizada) |
 | **Janela de análise** | 90 dias (rolling) |
-| **Número de tags** | 21 (12 positivas, 8 negativas, 1 neutra) |
+| **Número de tags** | 21 (11 positivas, 9 negativas, 1 neutra) |
 | **Escala do score** | 0 a 100 |
 | **Número de tiers** | 5 + Sem Score |
 | **Fonte de dados** | Dados transacionais da plataforma (data lake) |
@@ -275,4 +276,4 @@ Esse jogador é classificado como "Bom" (score 51–75) e tem 3 comportamentos p
 ---
 
 > **Desenvolvido por:** Squad Intelligence Engine
-> **Última atualização:** Abril de 2026
+> **Última atualização:** Maio de 2026 (v2.1 — auditoria + ajustes de discriminação)
