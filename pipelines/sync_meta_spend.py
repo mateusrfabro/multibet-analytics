@@ -52,6 +52,22 @@ log = logging.getLogger(__name__)
 
 AD_SOURCE = "meta"
 
+# Override por conta Meta: quando a BM e do afiliado (nao in-house),
+# trocamos ad_source pelo "nome" do afiliado (mesma string usada como
+# filtro no front da matriz aquisicao = tab_affiliate.nome) e populamos
+# affiliate_id direto. Contas in-house caem no default (ad_source='meta',
+# affiliate_id=NULL).
+#
+# Pedido diretoria 14/05/2026: custos de Junior Santana e Josias
+# precisam aparecer como filtros 'Junior santana' e 'Josias' na
+# matriz aquisicao (decisao Mauro: tratar no ad_source).
+META_ACCOUNT_OVERRIDES = {
+    # act_id              ad_source       affiliate_id   conta na Meta
+    "act_507388223796685": ("Junior santana", "457857"),  # Conta 01
+    "act_827977069307885": ("Junior santana", "457857"),  # PH
+    "act_957406645376599": ("Josias",          "467185"),  # CA GFINITUS 02
+}
+
 # Limiar (dias) pra alertar expiracao proxima do token Meta.
 # Cron do refresh_meta_token roda dia 1 do mes — 10d de folga cobre
 # 1 falha inesperada do cron sem quebrar a extracao intraday.
@@ -153,10 +169,17 @@ def sync(days: int = 7):
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """
 
-    records = [
-        (
+    def _override(acc_id: str):
+        """Retorna (ad_source, affiliate_id) com override por conta — fallback ('meta', None)."""
+        ov = META_ACCOUNT_OVERRIDES.get(acc_id)
+        return ov if ov else (AD_SOURCE, None)
+
+    records = []
+    for row in rows:
+        ad_src, aff_id = _override(row.get("account_id"))
+        records.append((
             row["date"],
-            AD_SOURCE,
+            ad_src,
             row["campaign_id"],
             row["campaign_name"][:500],
             row.get("account_name", "")[:50],  # channel_type = nome da conta
@@ -166,22 +189,27 @@ def sync(days: int = 7):
             row["conversions"],
             row.get("page_views", 0),
             row.get("reach", 0),
-            None,  # affiliate_id — mapear depois via dim_campaign_affiliate
+            aff_id,
             now_utc,
-        )
-        for row in rows
-    ]
+        ))
 
     # 3. Inserir no Super Nova DB (DELETE periodo + INSERT)
+    # DELETE cobre todos os ad_sources que esse pipeline pode gravar
+    # (default 'meta' + overrides por conta). Idempotente em re-runs.
+    ad_sources_managed = sorted({AD_SOURCE} | {ov[0] for ov in META_ACCOUNT_OVERRIDES.values()})
     tunnel, conn = get_supernova_connection()
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "DELETE FROM multibet.fact_ad_spend WHERE dt BETWEEN %s AND %s AND ad_source = %s",
-                (start_date, end_date, AD_SOURCE),
+                "DELETE FROM multibet.fact_ad_spend "
+                "WHERE dt BETWEEN %s AND %s AND ad_source = ANY(%s)",
+                (start_date, end_date, ad_sources_managed),
             )
             deleted = cur.rowcount
-            log.info(f"  Deletados {deleted} registros antigos do periodo")
+            log.info(
+                f"  Deletados {deleted} registros antigos do periodo "
+                f"(ad_sources={ad_sources_managed})"
+            )
 
             psycopg2.extras.execute_batch(cur, insert_sql, records, page_size=500)
             log.info(f"  Inseridos {len(records)} registros")

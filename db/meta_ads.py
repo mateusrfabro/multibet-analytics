@@ -43,10 +43,15 @@ API_VERSION = "v21.0"
 
 
 def _api_get(url: str) -> dict:
-    """GET na Graph API com tratamento de erros."""
+    """GET na Graph API com tratamento de erros.
+
+    Timeout 90s: insights diarios em janelas longas (~30d) podem demorar
+    quando a conta tem muitas campanhas. Pipeline diario (--days 2)
+    responde em <5s, entao folga nao prejudica intraday.
+    """
     req = urllib.request.Request(url)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=90) as resp:
             return json.loads(resp.read())
     except urllib.error.HTTPError as e:
         body = e.read().decode()
