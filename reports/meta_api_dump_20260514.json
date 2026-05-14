@@ -1,0 +1,3048 @@
+{
+  "api_version": "v21.0",
+  "fetched_at": "2026-05-14",
+  "sample_account": "act_1418521646228655",
+  "notes": "Dump bruto da Meta Marketing API com fields amplos em cada nivel. Cada chave abaixo eh a resposta CRUA da Graph API (sem nenhum filtro). Pipeline atual (sync_meta_spend.py) usa SO o nivel 'insights_campaign' filtrando alguns fields. Niveis ad/creative trazem as UTMs (url_tags).",
+  "endpoints": {
+    "1_account": {
+      "url": "https://graph.facebook.com/v21.0/act_1418521646228655?fields=id,account_id,name,account_status,age,amount_spent,balance,created_time,currency,disable_reason,spend_cap,timezone_name,timezone_offset_hours_utc",
+      "response": {
+        "id": "act_1418521646228655",
+        "account_id": "1418521646228655",
+        "name": "Multibet",
+        "account_status": 9,
+        "age": 316.86335648148,
+        "amount_spent": "360749779",
+        "balance": "1057832",
+        "created_time": "2025-06-09T04:05:11-0300",
+        "currency": "BRL",
+        "disable_reason": 0,
+        "spend_cap": "0",
+        "timezone_name": "America/Sao_Paulo",
+        "timezone_offset_hours_utc": -3
+      }
+    },
+    "2_campaigns_list": {
+      "url": "https://graph.facebook.com/v21.0/act_1418521646228655/campaigns?fields=id,name,account_id,objective,status,effective_status,configured_status,buying_type,special_ad_categories,daily_budget,lifetime_budget,budget_remaining,bid_strategy,start_time,stop_time,created_time,updated_time,source_campaign_id,spend_cap,can_use_spend_cap&limit=2",
+      "response": {
+        "data": [
+          {
+            "id": "120243363727660472",
+            "name": "Deposite e ganhe ROAS",
+            "account_id": "1418521646228655",
+            "objective": "OUTCOME_SALES",
+            "status": "ACTIVE",
+            "effective_status": "ACTIVE",
+            "configured_status": "ACTIVE",
+            "buying_type": "AUCTION",
+            "special_ad_categories": [],
+            "daily_budget": "100000",
+            "budget_remaining": "52156",
+            "bid_strategy": "LOWEST_COST_WITH_MIN_ROAS",
+            "start_time": "2026-04-30T09:55:40-0300",
+            "created_time": "2026-04-30T09:55:38-0300",
+            "updated_time": "2026-05-13T22:26:53-0300",
+            "source_campaign_id": "0",
+            "can_use_spend_cap": true
+          },
+          {
+            "id": "120243197091970472",
+            "name": "Deposite Cassino",
+            "account_id": "1418521646228655",
+            "objective": "OUTCOME_SALES",
+            "status": "PAUSED",
+            "effective_status": "PAUSED",
+            "configured_status": "PAUSED",
+            "buying_type": "AUCTION",
+            "special_ad_categories": [],
+            "daily_budget": "150000",
+            "budget_remaining": "150000",
+            "bid_strategy": "LOWEST_COST_WITHOUT_CAP",
+            "start_time": "2026-04-28T19:48:18-0300",
+            "created_time": "2026-04-28T19:47:45-0300",
+            "updated_time": "2026-05-01T18:15:33-0300",
+            "source_campaign_id": "0",
+            "can_use_spend_cap": true
+          }
+        ],
+        "paging": {
+          "cursors": {
+            "before": "QVFIUzhsSnZAja3ZAtbTBuOS1VM0ktWWx3Qjh2b2ppbG5RRFdOdFp1UXRpRWpUS2FFY1MyQkllUzBQZA3ZAwSG1CZAkV1M0NyRXdXWFNYN1ZAsOUREc0xKN010Nm9R",
+            "after": "QVFIUzN3N3l4bXBnWlA0NHVzcVl4SHZASNlhVLTByVGVSYmo2WlhtRlFYYV9EVnJmNURmam1ERkwzZAVZABbHNiRzhmWG03UEJCbXJvb2NCdzhaMmdvLUtGTVdB"
+          },
+          "next": "https://graph.facebook.com/v25.0/act_1418521646228655/campaigns?access_token=EAASFqlKv054BRQredZAPZBOVxA3ztZBZC8C8ZB5oV0ZC1G9qGZB3YzFRZAXWnW6WtwhjYne3bdoO8Afo19en1tMrijMwF6h1mzwplbWwn6R0etsboWyJHqdeUzlWBS09DQjXQd6ttSJ6SW9wTCSK60ZCXnwa3vvhNaBmUKTy30XciUOg6EsrgTGrMayz6AgignNfondWM&fields=id,name,account_id,objective,status,effective_status,configured_status,buying_type,special_ad_categories,daily_budget,lifetime_budget,budget_remaining,bid_strategy,start_time,stop_time,created_time,updated_time,source_campaign_id,spend_cap,can_use_spend_cap&limit=2&after=QVFIUzN3N3l4bXBnWlA0NHVzcVl4SHZASNlhVLTByVGVSYmo2WlhtRlFYYV9EVnJmNURmam1ERkwzZAVZABbHNiRzhmWG03UEJCbXJvb2NCdzhaMmdvLUtGTVdB"
+        }
+      }
+    },
+    "3_adsets_of_sample_campaign": {
+      "url": "https://graph.facebook.com/v21.0/120243363727660472/adsets?fields=id,name,campaign_id,account_id,status,effective_status,configured_status,daily_budget,lifetime_budget,bid_amount,bid_strategy,billing_event,optimization_goal,destination_type,promoted_object,attribution_setting,frequency_control_specs,learning_stage_info,start_time,end_time,created_time,updated_time,targeting&limit=2",
+      "response": {
+        "data": [
+          {
+            "id": "120243363727670472",
+            "name": "Aberto",
+            "campaign_id": "120243363727660472",
+            "account_id": "1418521646228655",
+            "status": "ACTIVE",
+            "effective_status": "ACTIVE",
+            "configured_status": "ACTIVE",
+            "billing_event": "IMPRESSIONS",
+            "optimization_goal": "VALUE",
+            "destination_type": "UNDEFINED",
+            "promoted_object": {
+              "pixel_id": "1057469609880166",
+              "custom_event_type": "PURCHASE",
+              "smart_pse_enabled": false
+            },
+            "learning_stage_info": {
+              "attribution_windows": [
+                "7d_click",
+                "1d_view"
+              ],
+              "conversions": 9,
+              "last_sig_edit_ts": 1778701000,
+              "status": "LEARNING"
+            },
+            "start_time": "2026-04-30T09:55:40-0300",
+            "created_time": "2026-04-30T09:55:39-0300",
+            "updated_time": "2026-05-13T22:26:37-0300",
+            "targeting": {
+              "age_max": 65,
+              "age_min": 18,
+              "age_range": [
+                18,
+                65
+              ],
+              "geo_locations": {
+                "countries": [
+                  "BR"
+                ],
+                "location_types": [
+                  "home",
+                  "recent"
+                ]
+              },
+              "brand_safety_content_filter_levels": [
+                "FACEBOOK_RELAXED",
+                "AN_RELAXED"
+              ],
+              "targeting_automation": {
+                "advantage_audience": 1,
+                "individual_setting": {
+                  "age": 1,
+                  "gender": 1
+                }
+              }
+            }
+          }
+        ],
+        "paging": {
+          "cursors": {
+            "before": "QVFIU0U2SmpzTy1kUVBnNTZAId1M4UldVRER3YzNOTUpEYWpiWmZACWktRbUhvZADVhRjh4NDFwd0MzOTFacDB6VmF3bF84RDJxbmpIdE00U3N0dm5ZANHJhYl9n",
+            "after": "QVFIU0U2SmpzTy1kUVBnNTZAId1M4UldVRER3YzNOTUpEYWpiWmZACWktRbUhvZADVhRjh4NDFwd0MzOTFacDB6VmF3bF84RDJxbmpIdE00U3N0dm5ZANHJhYl9n"
+          }
+        }
+      }
+    },
+    "4_ads_of_sample_adset": {
+      "url": "https://graph.facebook.com/v21.0/120243363727670472/ads?fields=id,name,adset_id,campaign_id,account_id,status,effective_status,configured_status,bid_amount,conversion_specs,tracking_specs,preview_shareable_link,created_time,updated_time,creative&limit=2",
+      "response": {
+        "data": [
+          {
+            "id": "120243363727650472",
+            "name": "AD1_",
+            "adset_id": "120243363727670472",
+            "campaign_id": "120243363727660472",
+            "account_id": "1418521646228655",
+            "status": "ACTIVE",
+            "effective_status": "ACTIVE",
+            "configured_status": "ACTIVE",
+            "bid_amount": 3000,
+            "conversion_specs": [
+              {
+                "action.type": [
+                  "offsite_conversion"
+                ],
+                "conversion_id": [
+                  "23961994290119297"
+                ]
+              }
+            ],
+            "tracking_specs": [
+              {
+                "action.type": [
+                  "offsite_conversion"
+                ],
+                "fb_pixel": [
+                  "1057469609880166"
+                ]
+              },
+              {
+                "action.type": [
+                  "onsite_conversion"
+                ]
+              },
+              {
+                "action.type": [
+                  "link_click"
+                ],
+                "post": [
+                  "122181089630887618"
+                ],
+                "post.wall": [
+                  "704325346087015"
+                ]
+              },
+              {
+                "action.type": [
+                  "post_engagement"
+                ],
+                "page": [
+                  "704325346087015"
+                ],
+                "post": [
+                  "122181089630887618"
+                ]
+              },
+              {
+                "action.type": [
+                  "post_interaction_gross"
+                ],
+                "page": [
+                  "704325346087015"
+                ],
+                "post": [
+                  "122181089630887618"
+                ]
+              }
+            ],
+            "preview_shareable_link": "https://fb.me/28aKvGweQhJfoRF",
+            "created_time": "2026-04-30T09:55:41-0300",
+            "updated_time": "2026-05-01T18:19:40-0300",
+            "creative": {
+              "id": "958314516942032"
+            }
+          }
+        ],
+        "paging": {
+          "cursors": {
+            "before": "QVFIU1BsUm1GVU1Hb2NUNkhyT3lvcHdxb3BHTGcwYTNZAbjU3LXNUTGpFMFNQX1piUmNEbENBYmc2dFRMekNiRm8yQTNWc3ZAyUlpiMXNOOEhQdlVlQkRWTFh3",
+            "after": "QVFIU1BsUm1GVU1Hb2NUNkhyT3lvcHdxb3BHTGcwYTNZAbjU3LXNUTGpFMFNQX1piUmNEbENBYmc2dFRMekNiRm8yQTNWc3ZAyUlpiMXNOOEhQdlVlQkRWTFh3"
+          }
+        }
+      }
+    },
+    "5_creative_full": {
+      "url": "https://graph.facebook.com/v21.0/958314516942032?fields=id,name,title,body,image_url,video_id,thumbnail_url,url_tags,object_type,object_story_id,object_story_spec,call_to_action_type,asset_feed_spec,instagram_actor_id,link_destination_display_url,link_url,effective_authorization_category,effective_object_story_id,link_og_id,status,template_url",
+      "response": {
+        "id": "958314516942032",
+        "name": "Multibet - Apostas Esportivas e Cassino Online 2026-05-01-e80288b989152bdf9cae413cbfec4bbd",
+        "title": "Multibet - Apostas Esportivas e Cassino Online",
+        "image_url": "https://scontent-gru2-2.xx.fbcdn.net/v/t45.1600-4/684275243_2173770100056340_5740832870754959412_n.png?stp=dst-jpg_tt6&_nc_cat=105&ccb=1-7&_nc_sid=d5bd00&_nc_eui2=AeGgELXMRmgnwHB8QvYQaVBOAFs-lhdPU88AWz6WF09Tz8nmzk6odPLY5YDFO2M5cAR8bCNABNV4lTvQ_21vcGzK&_nc_ohc=Y4PWUO-U-sEQ7kNvwEGM7-h&_nc_oc=Adq_K6vI9jTWazi7xEKCBErx_1EoHziGx1S3Da5e1BsPjaK13w47h00GUcEG2cnysnI&_nc_zt=1&_nc_ht=scontent-gru2-2.xx&edm=AAT1rw8EAAAA&_nc_gid=uXbyrc9ekiOdDnlubBH73w&_nc_tpa=Q5bMBQGq3v-yW4b5Sa5G1Jh-dGhSYbf13jl1Ma8T1b4uEWzEvYMsJo3RuMsAnZpK0iUlAHZ2DA8K1Dd7qw&oh=00_Af5ocyRRNIDsXcgkO7FwhbZOenyizFtdKiFbyAZAeYXsKw&oe=6A0BBAA8",
+        "thumbnail_url": "https://external-gru2-2.xx.fbcdn.net/emg1/v/t13/3705825256441995751?url=https%3A%2F%2Fwww.facebook.com%2Fads%2Fimage%2F%3Fd%3DAQJJyji7Pg5QaPstV18t5-r3FU5SpVLmZ2uw2xhQZO3F006fhw7DTOCyBVDisjIsXuZfoSR9_MMv6BheGCwxJLtZCsqPkqq1B321to3gLa8Tvub9j0hptv6WzTmCdVYYGlRwhgqBgm0v5Q2PPMaVBrJD&fb_obo=1&utld=facebook.com&stp=c0.5000x0.5000f_dst-emg0_p64x64_q75_tt6&edm=AAT1rw8EAAAA&_nc_gid=uXbyrc9ekiOdDnlubBH73w&_nc_eui2=AeElQHtsvh6voOSjrBnVJxfqwB47nAmNYcPAHjucCY1hw7FqvMZNszlw7KeWpMVpDahZ_C4rOgCl-niXlB9pfBvo&_nc_oc=Adq1D_Vj0--_Y2arQEdwsF4fHeRuTT8chaJ-Z5XV9PNzF4vFWDxvvw0BJUGTvHN5BD4&ccb=13-1&oh=06_Q3-_AbDDF9SAVMIUSMC-E1X6kWepbSYrddJe2MAQpxIIkn5z&oe=6A07E684&_nc_sid=58080a",
+        "object_type": "SHARE",
+        "object_story_spec": {
+          "page_id": "704325346087015",
+          "instagram_user_id": "17841460208969724",
+          "link_data": {
+            "link": "https://multi.bet.br/pb/jogos?ref=464673&src=ndzyeqgcfaitcfbneaibktdcvz&utm_source=464673&utm_campaign=modal-dep-100-roas",
+            "image_hash": "3dc746489e430f6e901689b3b0c206b4",
+            "call_to_action": {
+              "type": "PLAY_GAME"
+            }
+          }
+        },
+        "call_to_action_type": "PLAY_GAME",
+        "effective_authorization_category": "NONE",
+        "effective_object_story_id": "704325346087015_122181089630887618",
+        "status": "ACTIVE"
+      }
+    },
+    "6_insights_campaign_7d": {
+      "url": "https://graph.facebook.com/v21.0/120243363727660472/insights?fields=spend,impressions,clicks,reach,frequency,ctr,cpc,cpm,cpp,actions,action_values,conversions,cost_per_action_type,cost_per_conversion,cost_per_inline_link_click,cost_per_thruplay,cost_per_unique_action_type,cost_per_unique_click,date_start,date_stop,inline_link_clicks,inline_post_engagement,instant_experience_clicks_to_open,instant_experience_clicks_to_start,instant_experience_outbound_clicks,mobile_app_purchase_roas,objective,optimization_goal,purchase_roas,social_spend,unique_actions,unique_clicks,unique_ctr,unique_inline_link_click_ctr,unique_link_clicks_ctr,unique_outbound_clicks,unique_outbound_clicks_ctr,video_30_sec_watched_actions,video_avg_time_watched_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p100_watched_actions,video_play_actions,video_thruplay_watched_actions,video_time_watched_actions,website_ctr,website_purchase_roas&time_range=%7B%22since%22%3A%20%222026-05-07%22%2C%20%22until%22%3A%20%222026-05-13%22%7D&time_increment=1&level=campaign&limit=10",
+      "response": {
+        "data": [
+          {
+            "spend": "5603.23",
+            "impressions": "23690",
+            "clicks": "445",
+            "reach": "19533",
+            "frequency": "1.212819",
+            "ctr": "1.87843",
+            "cpc": "12.591528",
+            "cpm": "236.523005",
+            "cpp": "286.859673",
+            "actions": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "43"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "43"
+              },
+              {
+                "action_type": "link_click",
+                "value": "658"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "98"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "98"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "771"
+              },
+              {
+                "action_type": "purchase",
+                "value": "43"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "138"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "43"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "138"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "771"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "98"
+              },
+              {
+                "action_type": "comment",
+                "value": "15"
+              },
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "43"
+              },
+              {
+                "action_type": "post_interaction_net",
+                "value": "98"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "43"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "106"
+              },
+              {
+                "action_type": "post",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_conversion.post_save",
+                "value": "3"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_comment",
+                "value": "15"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "43"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_save",
+                "value": "3"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_like",
+                "value": "79"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "98"
+              },
+              {
+                "action_type": "lead",
+                "value": "106"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "43"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_lead",
+                "value": "106"
+              },
+              {
+                "action_type": "video_view",
+                "value": "15"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "106"
+              },
+              {
+                "action_type": "post_reaction",
+                "value": "79"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "98"
+              }
+            ],
+            "action_values": [
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "1661"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "4691"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "4691"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "1661"
+              },
+              {
+                "action_type": "purchase",
+                "value": "1661"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "0.17"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "4691"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "1661"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "4691"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "1661"
+              },
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "1661"
+              }
+            ],
+            "cost_per_action_type": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "130.307674"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "130.307674"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "57.175816"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "52.86066"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "130.307674"
+              },
+              {
+                "action_type": "video_view",
+                "value": "373.548667"
+              },
+              {
+                "action_type": "link_click",
+                "value": "8.515547"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "57.175816"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "52.86066"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "7.267484"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "57.175816"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "130.307674"
+              },
+              {
+                "action_type": "lead",
+                "value": "52.86066"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "40.603116"
+              },
+              {
+                "action_type": "purchase",
+                "value": "130.307674"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "7.267484"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "40.603116"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "57.175816"
+              }
+            ],
+            "cost_per_inline_link_click": "8.515547",
+            "cost_per_thruplay": [
+              {
+                "action_type": "video_view",
+                "value": "2801.615"
+              }
+            ],
+            "cost_per_unique_action_type": [
+              {
+                "action_type": "link_click",
+                "value": "11.342571"
+              }
+            ],
+            "cost_per_unique_click": "14.553844",
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "inline_link_clicks": "658",
+            "inline_post_engagement": "771",
+            "objective": "OUTCOME_SALES",
+            "optimization_goal": "RETURN_ON_AD_SPEND",
+            "purchase_roas": [
+              {
+                "action_type": "omni_purchase",
+                "value": "0.296436"
+              }
+            ],
+            "social_spend": "1.82",
+            "unique_actions": [
+              {
+                "action_type": "link_click",
+                "value": "494"
+              }
+            ],
+            "unique_clicks": "385",
+            "unique_ctr": "1.971023",
+            "unique_inline_link_click_ctr": "2.529053",
+            "unique_link_clicks_ctr": "2.529053",
+            "unique_outbound_clicks": [
+              {
+                "action_type": "outbound_click",
+                "value": "489"
+              }
+            ],
+            "unique_outbound_clicks_ctr": [
+              {
+                "action_type": "outbound_click",
+                "value": "2.503456"
+              }
+            ],
+            "video_30_sec_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "1"
+              }
+            ],
+            "video_avg_time_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "2"
+              }
+            ],
+            "video_play_actions": [
+              {
+                "action_type": "video_view",
+                "value": "121"
+              }
+            ],
+            "video_thruplay_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "2"
+              }
+            ],
+            "website_ctr": [
+              {
+                "action_type": "link_click",
+                "value": "2.777543"
+              }
+            ],
+            "website_purchase_roas": [
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "0.296436"
+              }
+            ]
+          },
+          {
+            "spend": "5379.46",
+            "impressions": "18101",
+            "clicks": "260",
+            "reach": "12729",
+            "frequency": "1.422028",
+            "ctr": "1.436385",
+            "cpc": "20.690231",
+            "cpm": "297.191315",
+            "cpp": "422.614502",
+            "actions": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "link_click",
+                "value": "301"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "83"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "83"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "336"
+              },
+              {
+                "action_type": "purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "93"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "32"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "93"
+              },
+              {
+                "action_type": "onsite_conversion.post_unlike",
+                "value": "1"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "336"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "32"
+              },
+              {
+                "action_type": "comment",
+                "value": "6"
+              },
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "post_interaction_net",
+                "value": "33"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "72"
+              },
+              {
+                "action_type": "post",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_comment",
+                "value": "6"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_like",
+                "value": "24"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "83"
+              },
+              {
+                "action_type": "lead",
+                "value": "72"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_lead",
+                "value": "72"
+              },
+              {
+                "action_type": "video_view",
+                "value": "3"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "72"
+              },
+              {
+                "action_type": "post_reaction",
+                "value": "25"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "83"
+              }
+            ],
+            "action_values": [
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "1748"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "5368.9"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "5368.9"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "1748"
+              },
+              {
+                "action_type": "purchase",
+                "value": "1748"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "0.17"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "5368.9"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "1748"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "5368.9"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "1748"
+              },
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "1748"
+              }
+            ],
+            "cost_per_action_type": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "168.108125"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "168.108125"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "64.812771"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "74.714722"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "168.108125"
+              },
+              {
+                "action_type": "video_view",
+                "value": "1793.153333"
+              },
+              {
+                "action_type": "link_click",
+                "value": "17.87196"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "168.108125"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "74.714722"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "16.010298"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "64.812771"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "168.108125"
+              },
+              {
+                "action_type": "lead",
+                "value": "74.714722"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "57.843656"
+              },
+              {
+                "action_type": "purchase",
+                "value": "168.108125"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "16.010298"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "57.843656"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "64.812771"
+              }
+            ],
+            "cost_per_inline_link_click": "17.87196",
+            "cost_per_unique_action_type": [
+              {
+                "action_type": "link_click",
+                "value": "23.087811"
+              }
+            ],
+            "cost_per_unique_click": "25.862788",
+            "date_start": "2026-05-08",
+            "date_stop": "2026-05-08",
+            "inline_link_clicks": "301",
+            "inline_post_engagement": "336",
+            "objective": "OUTCOME_SALES",
+            "optimization_goal": "RETURN_ON_AD_SPEND",
+            "purchase_roas": [
+              {
+                "action_type": "omni_purchase",
+                "value": "0.32494"
+              }
+            ],
+            "social_spend": "1.81",
+            "unique_actions": [
+              {
+                "action_type": "link_click",
+                "value": "233"
+              }
+            ],
+            "unique_clicks": "208",
+            "unique_ctr": "1.634064",
+            "unique_inline_link_click_ctr": "1.830466",
+            "unique_link_clicks_ctr": "1.830466",
+            "unique_outbound_clicks": [
+              {
+                "action_type": "outbound_click",
+                "value": "233"
+              }
+            ],
+            "unique_outbound_clicks_ctr": [
+              {
+                "action_type": "outbound_click",
+                "value": "1.830466"
+              }
+            ],
+            "video_avg_time_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "1"
+              }
+            ],
+            "video_play_actions": [
+              {
+                "action_type": "video_view",
+                "value": "38"
+              }
+            ],
+            "website_ctr": [
+              {
+                "action_type": "link_click",
+                "value": "1.662892"
+              }
+            ],
+            "website_purchase_roas": [
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "0.32494"
+              }
+            ]
+          },
+          {
+            "spend": "2678.2",
+            "impressions": "12142",
+            "clicks": "157",
+            "reach": "10301",
+            "frequency": "1.178721",
+            "ctr": "1.293032",
+            "cpc": "17.058599",
+            "cpm": "220.573217",
+            "cpp": "259.994175",
+            "actions": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "20"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "20"
+              },
+              {
+                "action_type": "link_click",
+                "value": "163"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "50"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "50"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "195"
+              },
+              {
+                "action_type": "purchase",
+                "value": "20"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "45"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "20"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "45"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "195"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "29"
+              },
+              {
+                "action_type": "comment",
+                "value": "4"
+              },
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "20"
+              },
+              {
+                "action_type": "post_interaction_net",
+                "value": "29"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "20"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "39"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_comment",
+                "value": "4"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "20"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_like",
+                "value": "25"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "50"
+              },
+              {
+                "action_type": "lead",
+                "value": "39"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "20"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_lead",
+                "value": "39"
+              },
+              {
+                "action_type": "video_view",
+                "value": "3"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "39"
+              },
+              {
+                "action_type": "post_reaction",
+                "value": "25"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "50"
+              }
+            ],
+            "action_values": [
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "588.82"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "1988.58"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "1988.58"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "588.82"
+              },
+              {
+                "action_type": "purchase",
+                "value": "588.82"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "0.06"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "1988.58"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "588.82"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "1988.58"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "588.82"
+              },
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "588.82"
+              }
+            ],
+            "cost_per_action_type": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "133.91"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "133.91"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "53.564"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "68.671795"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "133.91"
+              },
+              {
+                "action_type": "video_view",
+                "value": "892.733333"
+              },
+              {
+                "action_type": "link_click",
+                "value": "16.430675"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "92.351724"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "68.671795"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "13.734359"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "53.564"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "133.91"
+              },
+              {
+                "action_type": "lead",
+                "value": "68.671795"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "59.515556"
+              },
+              {
+                "action_type": "purchase",
+                "value": "133.91"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "13.734359"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "59.515556"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "53.564"
+              }
+            ],
+            "cost_per_inline_link_click": "16.430675",
+            "cost_per_unique_action_type": [
+              {
+                "action_type": "link_click",
+                "value": "18.343836"
+              }
+            ],
+            "cost_per_unique_click": "19.548905",
+            "date_start": "2026-05-09",
+            "date_stop": "2026-05-09",
+            "inline_link_clicks": "163",
+            "inline_post_engagement": "195",
+            "objective": "OUTCOME_SALES",
+            "optimization_goal": "RETURN_ON_AD_SPEND",
+            "purchase_roas": [
+              {
+                "action_type": "omni_purchase",
+                "value": "0.219857"
+              }
+            ],
+            "social_spend": "0.08",
+            "unique_actions": [
+              {
+                "action_type": "link_click",
+                "value": "146"
+              }
+            ],
+            "unique_clicks": "137",
+            "unique_ctr": "1.329968",
+            "unique_inline_link_click_ctr": "1.417338",
+            "unique_link_clicks_ctr": "1.417338",
+            "unique_outbound_clicks": [
+              {
+                "action_type": "outbound_click",
+                "value": "146"
+              }
+            ],
+            "unique_outbound_clicks_ctr": [
+              {
+                "action_type": "outbound_click",
+                "value": "1.417338"
+              }
+            ],
+            "video_avg_time_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "1"
+              }
+            ],
+            "video_play_actions": [
+              {
+                "action_type": "video_view",
+                "value": "47"
+              }
+            ],
+            "website_ctr": [
+              {
+                "action_type": "link_click",
+                "value": "1.342448"
+              }
+            ],
+            "website_purchase_roas": [
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "0.219857"
+              }
+            ]
+          },
+          {
+            "spend": "3635.9",
+            "impressions": "14680",
+            "clicks": "199",
+            "reach": "10637",
+            "frequency": "1.380088",
+            "ctr": "1.355586",
+            "cpc": "18.270854",
+            "cpm": "247.677112",
+            "cpp": "341.816302",
+            "actions": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "29"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "29"
+              },
+              {
+                "action_type": "link_click",
+                "value": "215"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "69"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "69"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "250"
+              },
+              {
+                "action_type": "purchase",
+                "value": "29"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "57"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "29"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "57"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "250"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "31"
+              },
+              {
+                "action_type": "comment",
+                "value": "4"
+              },
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "29"
+              },
+              {
+                "action_type": "post_interaction_net",
+                "value": "31"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "29"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "50"
+              },
+              {
+                "action_type": "post",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_comment",
+                "value": "4"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "29"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_like",
+                "value": "26"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "69"
+              },
+              {
+                "action_type": "lead",
+                "value": "50"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "29"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_lead",
+                "value": "50"
+              },
+              {
+                "action_type": "video_view",
+                "value": "4"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "50"
+              },
+              {
+                "action_type": "post_reaction",
+                "value": "26"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "69"
+              }
+            ],
+            "action_values": [
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "1099"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "4499"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "4499"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "1099"
+              },
+              {
+                "action_type": "purchase",
+                "value": "1099"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "0.11"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "4499"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "1099"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "4499"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "1099"
+              },
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "1099"
+              }
+            ],
+            "cost_per_action_type": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "125.375862"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "125.375862"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "52.694203"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "72.718"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "125.375862"
+              },
+              {
+                "action_type": "video_view",
+                "value": "908.975"
+              },
+              {
+                "action_type": "link_click",
+                "value": "16.911163"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "117.287097"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "72.718"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "14.5436"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "52.694203"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "125.375862"
+              },
+              {
+                "action_type": "lead",
+                "value": "72.718"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "63.787719"
+              },
+              {
+                "action_type": "purchase",
+                "value": "125.375862"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "14.5436"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "63.787719"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "52.694203"
+              }
+            ],
+            "cost_per_inline_link_click": "16.911163",
+            "cost_per_thruplay": [
+              {
+                "action_type": "video_view",
+                "value": "3635.9"
+              }
+            ],
+            "cost_per_unique_action_type": [
+              {
+                "action_type": "link_click",
+                "value": "22.58323"
+              }
+            ],
+            "cost_per_unique_click": "21.903012",
+            "date_start": "2026-05-10",
+            "date_stop": "2026-05-10",
+            "inline_link_clicks": "215",
+            "inline_post_engagement": "250",
+            "objective": "OUTCOME_SALES",
+            "optimization_goal": "RETURN_ON_AD_SPEND",
+            "purchase_roas": [
+              {
+                "action_type": "omni_purchase",
+                "value": "0.302264"
+              }
+            ],
+            "social_spend": "0.01",
+            "unique_actions": [
+              {
+                "action_type": "link_click",
+                "value": "161"
+              }
+            ],
+            "unique_clicks": "166",
+            "unique_ctr": "1.56059",
+            "unique_inline_link_click_ctr": "1.513585",
+            "unique_link_clicks_ctr": "1.513585",
+            "unique_outbound_clicks": [
+              {
+                "action_type": "outbound_click",
+                "value": "161"
+              }
+            ],
+            "unique_outbound_clicks_ctr": [
+              {
+                "action_type": "outbound_click",
+                "value": "1.513585"
+              }
+            ],
+            "video_30_sec_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "1"
+              }
+            ],
+            "video_avg_time_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "2"
+              }
+            ],
+            "video_play_actions": [
+              {
+                "action_type": "video_view",
+                "value": "37"
+              }
+            ],
+            "video_thruplay_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "1"
+              }
+            ],
+            "website_ctr": [
+              {
+                "action_type": "link_click",
+                "value": "1.464578"
+              }
+            ],
+            "website_purchase_roas": [
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "0.302264"
+              }
+            ]
+          },
+          {
+            "spend": "3020.49",
+            "impressions": "10879",
+            "clicks": "212",
+            "reach": "8087",
+            "frequency": "1.345245",
+            "ctr": "1.948709",
+            "cpc": "14.247594",
+            "cpm": "277.644085",
+            "cpp": "373.499444",
+            "actions": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "25"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "25"
+              },
+              {
+                "action_type": "link_click",
+                "value": "231"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "67"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "67"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "247"
+              },
+              {
+                "action_type": "purchase",
+                "value": "25"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "83"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "25"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "83"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "247"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "11"
+              },
+              {
+                "action_type": "comment",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "25"
+              },
+              {
+                "action_type": "post_interaction_net",
+                "value": "11"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "25"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "46"
+              },
+              {
+                "action_type": "post",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_conversion.post_save",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_comment",
+                "value": "1"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "25"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_save",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_like",
+                "value": "8"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "67"
+              },
+              {
+                "action_type": "lead",
+                "value": "46"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "25"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_lead",
+                "value": "46"
+              },
+              {
+                "action_type": "video_view",
+                "value": "5"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "46"
+              },
+              {
+                "action_type": "post_reaction",
+                "value": "8"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "67"
+              }
+            ],
+            "action_values": [
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "2625"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "8831"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "8831"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "2625"
+              },
+              {
+                "action_type": "purchase",
+                "value": "2625"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "0.26"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "8831"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "2625"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "8831"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "2625"
+              },
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "2625"
+              }
+            ],
+            "cost_per_action_type": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "120.8196"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "120.8196"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "45.08194"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "65.662826"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "120.8196"
+              },
+              {
+                "action_type": "video_view",
+                "value": "604.098"
+              },
+              {
+                "action_type": "link_click",
+                "value": "13.075714"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "274.59"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "65.662826"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "12.228704"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "45.08194"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "120.8196"
+              },
+              {
+                "action_type": "lead",
+                "value": "65.662826"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "36.391446"
+              },
+              {
+                "action_type": "purchase",
+                "value": "120.8196"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "12.228704"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "36.391446"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "45.08194"
+              }
+            ],
+            "cost_per_inline_link_click": "13.075714",
+            "cost_per_unique_action_type": [
+              {
+                "action_type": "link_click",
+                "value": "18.530614"
+              }
+            ],
+            "cost_per_unique_click": "18.306",
+            "date_start": "2026-05-11",
+            "date_stop": "2026-05-11",
+            "inline_link_clicks": "231",
+            "inline_post_engagement": "247",
+            "objective": "OUTCOME_SALES",
+            "optimization_goal": "RETURN_ON_AD_SPEND",
+            "purchase_roas": [
+              {
+                "action_type": "omni_purchase",
+                "value": "0.869064"
+              }
+            ],
+            "social_spend": "0",
+            "unique_actions": [
+              {
+                "action_type": "link_click",
+                "value": "163"
+              }
+            ],
+            "unique_clicks": "165",
+            "unique_ctr": "2.040312",
+            "unique_inline_link_click_ctr": "2.015581",
+            "unique_link_clicks_ctr": "2.015581",
+            "unique_outbound_clicks": [
+              {
+                "action_type": "outbound_click",
+                "value": "163"
+              }
+            ],
+            "unique_outbound_clicks_ctr": [
+              {
+                "action_type": "outbound_click",
+                "value": "2.015581"
+              }
+            ],
+            "video_avg_time_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "2"
+              }
+            ],
+            "video_play_actions": [
+              {
+                "action_type": "video_view",
+                "value": "37"
+              }
+            ],
+            "website_ctr": [
+              {
+                "action_type": "link_click",
+                "value": "2.123357"
+              }
+            ],
+            "website_purchase_roas": [
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "0.869064"
+              }
+            ]
+          },
+          {
+            "spend": "6040.73",
+            "impressions": "30509",
+            "clicks": "306",
+            "reach": "20788",
+            "frequency": "1.467626",
+            "ctr": "1.002983",
+            "cpc": "19.740948",
+            "cpm": "197.998296",
+            "cpp": "290.587358",
+            "actions": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "link_click",
+                "value": "384"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "67"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "67"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "435"
+              },
+              {
+                "action_type": "purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "93"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "32"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "93"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "435"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "41"
+              },
+              {
+                "action_type": "comment",
+                "value": "4"
+              },
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "post_interaction_net",
+                "value": "41"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "71"
+              },
+              {
+                "action_type": "onsite_conversion.post_save",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_comment",
+                "value": "4"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_save",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_like",
+                "value": "36"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "67"
+              },
+              {
+                "action_type": "lead",
+                "value": "71"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "32"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_lead",
+                "value": "71"
+              },
+              {
+                "action_type": "video_view",
+                "value": "10"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "71"
+              },
+              {
+                "action_type": "post_reaction",
+                "value": "36"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "67"
+              }
+            ],
+            "action_values": [
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "3725"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "5478"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "5478"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "3725"
+              },
+              {
+                "action_type": "purchase",
+                "value": "3725"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "0.37"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "5478"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "3725"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "5478"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "3725"
+              },
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "3725"
+              }
+            ],
+            "cost_per_action_type": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "188.772813"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "188.772813"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "90.160149"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "85.080704"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "188.772813"
+              },
+              {
+                "action_type": "video_view",
+                "value": "604.073"
+              },
+              {
+                "action_type": "link_click",
+                "value": "15.731068"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "147.334878"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "85.080704"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "13.886736"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "90.160149"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "188.772813"
+              },
+              {
+                "action_type": "lead",
+                "value": "85.080704"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "64.954086"
+              },
+              {
+                "action_type": "purchase",
+                "value": "188.772813"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "13.886736"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "64.954086"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "90.160149"
+              }
+            ],
+            "cost_per_inline_link_click": "15.731068",
+            "cost_per_thruplay": [
+              {
+                "action_type": "video_view",
+                "value": "6040.73"
+              }
+            ],
+            "cost_per_unique_action_type": [
+              {
+                "action_type": "link_click",
+                "value": "20.477051"
+              }
+            ],
+            "cost_per_unique_click": "23.413682",
+            "date_start": "2026-05-12",
+            "date_stop": "2026-05-12",
+            "inline_link_clicks": "384",
+            "inline_post_engagement": "435",
+            "objective": "OUTCOME_SALES",
+            "optimization_goal": "RETURN_ON_AD_SPEND",
+            "purchase_roas": [
+              {
+                "action_type": "omni_purchase",
+                "value": "0.616647"
+              }
+            ],
+            "social_spend": "0.42",
+            "unique_actions": [
+              {
+                "action_type": "link_click",
+                "value": "295"
+              }
+            ],
+            "unique_clicks": "258",
+            "unique_ctr": "1.241101",
+            "unique_inline_link_click_ctr": "1.419088",
+            "unique_link_clicks_ctr": "1.419088",
+            "unique_outbound_clicks": [
+              {
+                "action_type": "outbound_click",
+                "value": "284"
+              }
+            ],
+            "unique_outbound_clicks_ctr": [
+              {
+                "action_type": "outbound_click",
+                "value": "1.366173"
+              }
+            ],
+            "video_avg_time_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "1"
+              }
+            ],
+            "video_play_actions": [
+              {
+                "action_type": "video_view",
+                "value": "113"
+              }
+            ],
+            "video_thruplay_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "1"
+              }
+            ],
+            "website_ctr": [
+              {
+                "action_type": "link_click",
+                "value": "1.258645"
+              }
+            ],
+            "website_purchase_roas": [
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "0.616647"
+              }
+            ]
+          },
+          {
+            "spend": "2269.97",
+            "impressions": "9805",
+            "clicks": "148",
+            "reach": "7102",
+            "frequency": "1.380597",
+            "ctr": "1.509434",
+            "cpc": "15.337635",
+            "cpm": "231.511474",
+            "cpp": "319.62405",
+            "actions": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "11"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "11"
+              },
+              {
+                "action_type": "link_click",
+                "value": "171"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "25"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "25"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "190"
+              },
+              {
+                "action_type": "purchase",
+                "value": "11"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "57"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "11"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "57"
+              },
+              {
+                "action_type": "onsite_conversion.post_unlike",
+                "value": "1"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "190"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "16"
+              },
+              {
+                "action_type": "comment",
+                "value": "2"
+              },
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "11"
+              },
+              {
+                "action_type": "post_interaction_net",
+                "value": "18"
+              },
+              {
+                "action_type": "post_uncomment",
+                "value": "1"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "11"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "37"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_comment",
+                "value": "3"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "11"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_like",
+                "value": "13"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "25"
+              },
+              {
+                "action_type": "lead",
+                "value": "37"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "11"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_lead",
+                "value": "37"
+              },
+              {
+                "action_type": "video_view",
+                "value": "3"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "37"
+              },
+              {
+                "action_type": "post_reaction",
+                "value": "14"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "25"
+              }
+            ],
+            "action_values": [
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "390"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "1170"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "1170"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "390"
+              },
+              {
+                "action_type": "purchase",
+                "value": "390"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "0.04"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "1170"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "390"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "1170"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "390"
+              },
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "390"
+              }
+            ],
+            "cost_per_action_type": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "206.360909"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "206.360909"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "90.7988"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "61.350541"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "206.360909"
+              },
+              {
+                "action_type": "video_view",
+                "value": "756.656667"
+              },
+              {
+                "action_type": "link_click",
+                "value": "13.274678"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "141.873125"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "61.350541"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "11.947211"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "90.7988"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "206.360909"
+              },
+              {
+                "action_type": "lead",
+                "value": "61.350541"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "39.824035"
+              },
+              {
+                "action_type": "purchase",
+                "value": "206.360909"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "11.947211"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "39.824035"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "90.7988"
+              }
+            ],
+            "cost_per_inline_link_click": "13.274678",
+            "cost_per_unique_action_type": [
+              {
+                "action_type": "link_click",
+                "value": "16.940075"
+              }
+            ],
+            "cost_per_unique_click": "18.916417",
+            "date_start": "2026-05-13",
+            "date_stop": "2026-05-13",
+            "inline_link_clicks": "171",
+            "inline_post_engagement": "190",
+            "objective": "OUTCOME_SALES",
+            "optimization_goal": "RETURN_ON_AD_SPEND",
+            "purchase_roas": [
+              {
+                "action_type": "omni_purchase",
+                "value": "0.171808"
+              }
+            ],
+            "social_spend": "0.28",
+            "unique_actions": [
+              {
+                "action_type": "link_click",
+                "value": "134"
+              }
+            ],
+            "unique_clicks": "120",
+            "unique_ctr": "1.689665",
+            "unique_inline_link_click_ctr": "1.886792",
+            "unique_link_clicks_ctr": "1.886792",
+            "unique_outbound_clicks": [
+              {
+                "action_type": "outbound_click",
+                "value": "134"
+              }
+            ],
+            "unique_outbound_clicks_ctr": [
+              {
+                "action_type": "outbound_click",
+                "value": "1.886792"
+              }
+            ],
+            "video_avg_time_watched_actions": [
+              {
+                "action_type": "video_view",
+                "value": "3"
+              }
+            ],
+            "video_play_actions": [
+              {
+                "action_type": "video_view",
+                "value": "9"
+              }
+            ],
+            "website_ctr": [
+              {
+                "action_type": "link_click",
+                "value": "1.744008"
+              }
+            ],
+            "website_purchase_roas": [
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "0.171808"
+              }
+            ]
+          }
+        ],
+        "paging": {
+          "cursors": {
+            "before": "MAZDZD",
+            "after": "NgZDZD"
+          }
+        }
+      }
+    },
+    "7_insights_with_breakdown_device_publisher": {
+      "url": "https://graph.facebook.com/v21.0/120243363727660472/insights?time_range=%7B%22since%22%3A%20%222026-05-07%22%2C%20%22until%22%3A%20%222026-05-13%22%7D&time_increment=1&level=campaign&limit=10&breakdowns=device_platform,publisher_platform",
+      "response": {
+        "data": [
+          {
+            "spend": "0.03",
+            "impressions": "7",
+            "clicks": "0",
+            "reach": "3",
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "device_platform": "desktop",
+            "publisher_platform": "audience_network"
+          },
+          {
+            "spend": "11.690146",
+            "impressions": "161",
+            "clicks": "5",
+            "reach": "91",
+            "actions": [
+              {
+                "action_type": "link_click",
+                "value": "5"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "1"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "1"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "5"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "2"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "2"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "5"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "1"
+              },
+              {
+                "action_type": "lead",
+                "value": "1"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_lead",
+                "value": "1"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "1"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "1"
+              }
+            ],
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "device_platform": "desktop",
+            "publisher_platform": "facebook"
+          },
+          {
+            "spend": "0.720009",
+            "impressions": "20",
+            "clicks": "0",
+            "reach": "20",
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "device_platform": "desktop",
+            "publisher_platform": "instagram"
+          },
+          {
+            "spend": "6.630083",
+            "impressions": "172",
+            "clicks": "14",
+            "reach": "84",
+            "actions": [
+              {
+                "action_type": "link_click",
+                "value": "17"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "17"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "17"
+              }
+            ],
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "device_platform": "mobile_app",
+            "publisher_platform": "audience_network"
+          },
+          {
+            "spend": "1109.633862",
+            "impressions": "7396",
+            "clicks": "104",
+            "reach": "6139",
+            "actions": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "10"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "10"
+              },
+              {
+                "action_type": "link_click",
+                "value": "313"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "19"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "19"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "387"
+              },
+              {
+                "action_type": "purchase",
+                "value": "10"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "28"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "10"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "28"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "387"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "74"
+              },
+              {
+                "action_type": "comment",
+                "value": "13"
+              },
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "10"
+              },
+              {
+                "action_type": "post_interaction_net",
+                "value": "74"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "10"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "26"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_comment",
+                "value": "13"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "10"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_like",
+                "value": "61"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "19"
+              },
+              {
+                "action_type": "lead",
+                "value": "26"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "10"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_lead",
+                "value": "26"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "26"
+              },
+              {
+                "action_type": "post_reaction",
+                "value": "61"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "19"
+              }
+            ],
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "device_platform": "mobile_app",
+            "publisher_platform": "facebook"
+          },
+          {
+            "spend": "4462.135745",
+            "impressions": "15804",
+            "clicks": "317",
+            "reach": "13448",
+            "actions": [
+              {
+                "action_type": "web_in_store_purchase",
+                "value": "33"
+              },
+              {
+                "action_type": "omni_purchase",
+                "value": "33"
+              },
+              {
+                "action_type": "link_click",
+                "value": "255"
+              },
+              {
+                "action_type": "initiate_checkout",
+                "value": "78"
+              },
+              {
+                "action_type": "omni_initiated_checkout",
+                "value": "78"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "286"
+              },
+              {
+                "action_type": "purchase",
+                "value": "33"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "106"
+              },
+              {
+                "action_type": "offsite_purchase_add_20_s_calls",
+                "value": "33"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "106"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "286"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "16"
+              },
+              {
+                "action_type": "comment",
+                "value": "2"
+              },
+              {
+                "action_type": "onsite_web_app_purchase",
+                "value": "33"
+              },
+              {
+                "action_type": "post_interaction_net",
+                "value": "16"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_purchase",
+                "value": "33"
+              },
+              {
+                "action_type": "onsite_web_lead",
+                "value": "79"
+              },
+              {
+                "action_type": "post",
+                "value": "1"
+              },
+              {
+                "action_type": "onsite_conversion.post_save",
+                "value": "3"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_comment",
+                "value": "2"
+              },
+              {
+                "action_type": "web_app_in_store_purchase",
+                "value": "33"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_save",
+                "value": "3"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_like",
+                "value": "10"
+              },
+              {
+                "action_type": "onsite_web_initiate_checkout",
+                "value": "78"
+              },
+              {
+                "action_type": "lead",
+                "value": "79"
+              },
+              {
+                "action_type": "onsite_web_purchase",
+                "value": "33"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_lead",
+                "value": "79"
+              },
+              {
+                "action_type": "video_view",
+                "value": "15"
+              },
+              {
+                "action_type": "offsite_lead_add_20_s_calls",
+                "value": "79"
+              },
+              {
+                "action_type": "post_reaction",
+                "value": "10"
+              },
+              {
+                "action_type": "offsite_conversion.fb_pixel_initiate_checkout",
+                "value": "78"
+              }
+            ],
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "device_platform": "mobile_app",
+            "publisher_platform": "instagram"
+          },
+          {
+            "spend": "0.070001",
+            "impressions": "1",
+            "clicks": "0",
+            "reach": "1",
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "device_platform": "mobile_app",
+            "publisher_platform": "messenger"
+          },
+          {
+            "spend": "3.750047",
+            "impressions": "46",
+            "clicks": "0",
+            "reach": "46",
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "device_platform": "mobile_app",
+            "publisher_platform": "threads"
+          },
+          {
+            "spend": "6.330079",
+            "impressions": "45",
+            "clicks": "4",
+            "reach": "40",
+            "actions": [
+              {
+                "action_type": "link_click",
+                "value": "67"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "75"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "1"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "1"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "75"
+              },
+              {
+                "action_type": "post_interaction_gross",
+                "value": "8"
+              },
+              {
+                "action_type": "post_interaction_net",
+                "value": "8"
+              },
+              {
+                "action_type": "onsite_conversion.post_net_like",
+                "value": "8"
+              },
+              {
+                "action_type": "post_reaction",
+                "value": "8"
+              }
+            ],
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "device_platform": "mobile_web",
+            "publisher_platform": "facebook"
+          },
+          {
+            "spend": "2.240028",
+            "impressions": "38",
+            "clicks": "1",
+            "reach": "38",
+            "actions": [
+              {
+                "action_type": "link_click",
+                "value": "1"
+              },
+              {
+                "action_type": "page_engagement",
+                "value": "1"
+              },
+              {
+                "action_type": "landing_page_view",
+                "value": "1"
+              },
+              {
+                "action_type": "omni_landing_page_view",
+                "value": "1"
+              },
+              {
+                "action_type": "post_engagement",
+                "value": "1"
+              }
+            ],
+            "date_start": "2026-05-07",
+            "date_stop": "2026-05-07",
+            "device_platform": "mobile_web",
+            "publisher_platform": "instagram"
+          }
+        ],
+        "paging": {
+          "cursors": {
+            "before": "MAZDZD",
+            "after": "OQZDZD"
+          },
+          "next": "https://graph.facebook.com/v25.0/120243363727660472/insights?access_token=EAASFqlKv054BRQredZAPZBOVxA3ztZBZC8C8ZB5oV0ZC1G9qGZB3YzFRZAXWnW6WtwhjYne3bdoO8Afo19en1tMrijMwF6h1mzwplbWwn6R0etsboWyJHqdeUzlWBS09DQjXQd6ttSJ6SW9wTCSK60ZCXnwa3vvhNaBmUKTy30XciUOg6EsrgTGrMayz6AgignNfondWM&fields=spend,impressions,clicks,reach,actions&time_range=%7B%22since%22%3A%20%222026-05-07%22%2C%20%22until%22%3A%20%222026-05-13%22%7D&time_increment=1&level=campaign&limit=10&breakdowns=device_platform,publisher_platform&after=OQZDZD"
+        }
+      }
+    },
+    "8_metadata_account_fields": {
+      "note": "Metadata: o Facebook expoe lista de fields disponiveis no proprio objeto",
+      "url": "https://graph.facebook.com/v21.0/act_1418521646228655?metadata=1",
+      "response": {
+        "id": "act_1418521646228655"
+      }
+    }
+  },
+  "sample_campaign_id": "120243363727660472",
+  "sample_adset_id": "120243363727670472",
+  "sample_ad_id": "120243363727650472",
+  "sample_creative_id": "958314516942032"
+}
