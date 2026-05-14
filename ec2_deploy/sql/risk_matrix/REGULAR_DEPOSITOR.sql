@@ -26,14 +26,14 @@ brand AS (
 monthly_deposits AS (
   SELECT
     c.c_ecr_id AS user_id,
-    DATE_TRUNC('month', c.c_created_time) AS mes_ano,
+    DATE_TRUNC('month', c.c_created_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo') AS mes_ano,
     COUNT(c.c_txn_id) AS qtd_dep
   FROM cashier_ec2.tbl_cashier_deposit c
   WHERE c.c_created_time >= (SELECT start_ts FROM params)
     AND c.c_created_time <  (SELECT end_ts FROM params)
     AND c.c_txn_status = 'txn_confirmed_success'
     AND c.c_initial_amount > 0
-  GROUP BY c.c_ecr_id, DATE_TRUNC('month', c.c_created_time)
+  GROUP BY c.c_ecr_id, DATE_TRUNC('month', c.c_created_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo')
 ),
 
 -- Qualifica quem tem media >= 3 depositos/mes

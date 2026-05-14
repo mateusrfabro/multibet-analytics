@@ -27,7 +27,7 @@ brand AS (
 promotion_dates AS (
   SELECT DISTINCT
     b.c_ecr_id AS user_id,
-    CAST(b.c_created_time AS DATE) AS promo_date
+    CAST(b.c_created_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE) AS promo_date
   FROM bonus_ec2.tbl_bonus_pocket_txn b
   WHERE b.c_created_time >= (SELECT start_ts FROM params)
     AND b.c_created_time <  (SELECT end_ts FROM params)
@@ -38,7 +38,7 @@ promotion_dates AS (
 deposits AS (
   SELECT
     c.c_ecr_id AS user_id,
-    CAST(c.c_created_time AS DATE) AS deposit_date
+    CAST(c.c_created_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE) AS deposit_date
   FROM cashier_ec2.tbl_cashier_deposit c
   WHERE c.c_created_time >= (SELECT start_ts FROM params)
     AND c.c_created_time <  (SELECT end_ts FROM params)

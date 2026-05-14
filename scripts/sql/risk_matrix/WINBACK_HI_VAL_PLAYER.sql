@@ -40,7 +40,7 @@ recent_ggr AS (
   SELECT
     t.c_ecr_id AS user_id,
     MIN(t.c_start_time) AS first_recent_activity,
-    COUNT(DISTINCT CAST(t.c_start_time AS DATE)) AS recent_active_days,
+    COUNT(DISTINCT CAST(t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE)) AS recent_active_days,
     SUM(CASE WHEN t.c_txn_type IN (27, 28, 41, 43, 59, 127)
              THEN t.c_amount_in_ecr_ccy ELSE 0 END) / 100.0 AS bets_brl,
     SUM(CASE WHEN t.c_txn_type IN (45, 80, 112)

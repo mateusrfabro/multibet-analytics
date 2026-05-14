@@ -4,6 +4,14 @@
 -- Score: -10 | Categoria: Comportamental | Tipo: Negativo
 -- Descricao: Participa de 3+ promocoes consecutivas sem jogar
 --            fora delas — bonus grinder
+--
+-- FIX 14/05/2026 (auditoria v2.2):
+--   1) Timezone BRT em todos os CAST de datas (regra ouro CLAUDE.md).
+--   2) Logica do ratio refeita. Antes: bonus_day_count / active_day_count
+--      em CTEs INDEPENDENTES — podia dar ratio > 1 (dia com bonus sem aposta)
+--      e sempre flagar. Agora: faz UNION ALL para ter (user_id, day, has_bonus,
+--      has_bet) por dia, conta os 3 cruzados, e exige "dos dias ATIVOS, >=80%
+--      tem bonus".
 -- ================================================================
 WITH params AS (
   SELECT
@@ -23,40 +31,65 @@ brand AS (
   GROUP BY c_partner_id
 ),
 
--- Dias com bonus
-bonus_days AS (
-  SELECT
+-- Dias com bonus (em BRT)
+bonus_days_raw AS (
+  SELECT DISTINCT
     b.c_ecr_id AS user_id,
-    COUNT(DISTINCT CAST(b.c_created_time AS DATE)) AS bonus_day_count
+    CAST(b.c_created_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE) AS day
   FROM bonus_ec2.tbl_bonus_pocket_txn b
   WHERE b.c_created_time >= (SELECT start_ts FROM params)
     AND b.c_created_time <  (SELECT end_ts FROM params)
     AND b.c_bonus_txn_status = 'SUCCESS'
-  GROUP BY b.c_ecr_id
 ),
 
--- Dias com atividade total (apostas)
-activity_days AS (
-  SELECT
+-- Dias com aposta (em BRT)
+activity_days_raw AS (
+  SELECT DISTINCT
     t.c_ecr_id AS user_id,
-    COUNT(DISTINCT CAST(t.c_start_time AS DATE)) AS active_day_count
+    CAST(t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE) AS day
   FROM fund_ec2.tbl_real_fund_txn t
   WHERE t.c_start_time >= (SELECT start_ts FROM params)
     AND t.c_start_time <  (SELECT end_ts FROM params)
     AND t.c_txn_type IN (27, 28, 41, 43, 59, 127) -- apostas
     AND t.c_txn_status = 'SUCCESS'
-  GROUP BY t.c_ecr_id
 ),
 
--- Qualifica: 3+ dias de bonus E >= 80% dos dias ativos coincidem com bonus
+-- Combina os dois em (user_id, day, has_bonus, has_bet) com 0/1
+day_flags AS (
+  SELECT
+    user_id,
+    day,
+    MAX(has_bonus) AS has_bonus,
+    MAX(has_bet)   AS has_bet
+  FROM (
+    SELECT user_id, day, 1 AS has_bonus, 0 AS has_bet FROM bonus_days_raw
+    UNION ALL
+    SELECT user_id, day, 0 AS has_bonus, 1 AS has_bet FROM activity_days_raw
+  )
+  GROUP BY user_id, day
+),
+
+-- Agrega por jogador: total de dias com bonus, total de dias com aposta,
+-- e total de dias com AMBOS (intersecao)
+agg AS (
+  SELECT
+    user_id,
+    SUM(has_bonus)               AS bonus_days,
+    SUM(has_bet)                 AS active_days,
+    SUM(has_bonus * has_bet)     AS bonus_and_bet_days
+  FROM day_flags
+  GROUP BY user_id
+),
+
+-- Qualifica: 3+ dias de bonus E (zero atividade real OU >=80% dos dias
+-- ATIVOS coincidem com bonus). Ratio sempre <=1 por construcao.
 qualifying AS (
-  SELECT bd.user_id
-  FROM bonus_days bd
-  LEFT JOIN activity_days ad ON bd.user_id = ad.user_id
-  WHERE bd.bonus_day_count >= 3
+  SELECT user_id
+  FROM agg
+  WHERE bonus_days >= 3
     AND (
-      ad.active_day_count IS NULL  -- zero atividade fora de bonus
-      OR CAST(bd.bonus_day_count AS DOUBLE) / GREATEST(ad.active_day_count, 1) >= 0.80
+      active_days = 0
+      OR CAST(bonus_and_bet_days AS DOUBLE) / active_days >= 0.80
     )
 )
 

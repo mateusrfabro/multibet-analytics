@@ -27,14 +27,14 @@ brand AS (
 daily_sessions AS (
   SELECT
     t.c_ecr_id AS user_id,
-    CAST(t.c_start_time AS DATE) AS game_date,
+    CAST(t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE) AS game_date,
     COUNT(DISTINCT t.c_session_id) AS sessions_count
   FROM fund_ec2.tbl_real_fund_txn t
   WHERE t.c_start_time >= (SELECT start_ts FROM params)
     AND t.c_start_time <  (SELECT end_ts FROM params)
     AND t.c_txn_status = 'SUCCESS'
     AND t.c_session_id IS NOT NULL
-  GROUP BY t.c_ecr_id, CAST(t.c_start_time AS DATE)
+  GROUP BY t.c_ecr_id, CAST(t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE)
 ),
 
 -- Media de sessoes por dia

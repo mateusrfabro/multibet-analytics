@@ -39,7 +39,7 @@ old_activity AS (
 recent_activity AS (
   SELECT
     t.c_ecr_id AS user_id,
-    COUNT(DISTINCT CAST(t.c_start_time AS DATE)) AS recent_active_days,
+    COUNT(DISTINCT CAST(t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE)) AS recent_active_days,
     MIN(t.c_start_time) AS first_recent_activity
   FROM fund_ec2.tbl_real_fund_txn t
   WHERE t.c_start_time >= CURRENT_TIMESTAMP - INTERVAL '14' DAY

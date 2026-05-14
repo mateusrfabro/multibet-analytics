@@ -31,7 +31,7 @@ rollback_transactions AS (
   SELECT
     t.c_ecr_id AS user_id,
     COUNT(*) AS total_rollbacks,
-    COUNT(DISTINCT CAST(t.c_start_time AS DATE)) AS rollback_days
+    COUNT(DISTINCT CAST(t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE)) AS rollback_days
   FROM fund_ec2.tbl_real_fund_txn t
   WHERE t.c_start_time >= (SELECT start_ts FROM params)
     AND t.c_start_time <  (SELECT end_ts FROM params)

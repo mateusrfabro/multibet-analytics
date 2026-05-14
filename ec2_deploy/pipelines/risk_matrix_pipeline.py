@@ -372,6 +372,19 @@ def save_to_postgres(df: pd.DataFrame, snapshot_date: str) -> None:
                         )
                         log.info(f"  ADD COLUMN {col}")
 
+                # FIX 14/05/2026 (auditoria v2.2): remove coluna legacy
+                # `player_not_valid`. Vinha da v1 do pipeline, nunca foi populada
+                # nas execucoes da v2. Auditoria empirica mostrou 100% NULL.
+                legacy_cols = {"player_not_valid"}
+                for col in legacy_cols:
+                    if col in existing:
+                        cur.execute(
+                            f"ALTER TABLE {PG_SCHEMA}.{PG_TABLE} "
+                            f"DROP COLUMN IF EXISTS {col};"
+                        )
+                        log.info(f"  DROP COLUMN (legacy) {col}")
+                        existing.discard(col)
+
             log.info(f"Deletando snapshot {snapshot_date} (preservando historico)...")
             cur.execute(
                 f"DELETE FROM {PG_SCHEMA}.{PG_TABLE} WHERE snapshot_date = %s",
@@ -469,7 +482,7 @@ def export_legenda(run_date: str) -> Path:
         "reinvest_player": "+15 | Saca e reinveste (deposita de novo)",
         "non_promo_player": "+10 | Ativo ha 7d sem usar promo",
         "engaged_player": "+10 | 3-10 sessoes/dia (engajado)",
-        "rg_alert_player": " +1 | 10+ sessoes/dia (alerta jogo responsavel)",
+        "rg_alert_player": " -1 | 10+ sessoes/dia (alerta jogo responsavel)",
         "behav_risk_player": "-10 | Saques em horarios extremos + valores anomalos",
         "potencial_abuser": " -5 | Conta com < 2 dias (muito nova)",
         "player_reengaged": "+30 | Reativado apos 30d inativo, engajado",
@@ -590,6 +603,19 @@ def main() -> None:
         for tier, count in tier_counts.items():
             pct = count / len(final) * 100
             log.info(f"  {tier:15s}: {count:>6d} ({pct:.1f}%)")
+
+        # FIX 14/05/2026 (auditoria v2.2): log pos-merge.
+        #   Antes so logava o `len(df)` do SQL bruto, antes do merge com
+        #   user_base (cohort financeiro 90d). POTENCIAL_ABUSER reportava
+        #   4.007 no SQL mas so 1.141 chegavam na tabela (-71%) porque
+        #   signup<2d nao tem deposito ainda. Esse log mostra o que de
+        #   fato vai pra tabela e pro Smartico.
+        log.info("Distribuicao por tag (POS-merge cohort 90d) — o que vai pra tabela:")
+        for col in ALL_TAG_COLUMNS:
+            if col in final.columns:
+                ativos = int((final[col].fillna(0) != 0).sum())
+                pct = ativos / len(final) * 100
+                log.info(f"  {col:30s}: {ativos:>7,d} ({pct:5.2f}%)")
 
     # 6. Export
     csv_path = export_csv(final, run_date)

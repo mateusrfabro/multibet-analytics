@@ -32,7 +32,7 @@ player_ggr AS (
              THEN t.c_amount_in_ecr_ccy ELSE 0 END) / 100.0 AS total_bets_brl,
     SUM(CASE WHEN t.c_txn_type IN (45, 80, 112)
              THEN t.c_amount_in_ecr_ccy ELSE 0 END) / 100.0 AS total_wins_brl,
-    COUNT(DISTINCT CAST(t.c_start_time AS DATE)) AS active_days
+    COUNT(DISTINCT CAST(t.c_start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Sao_Paulo' AS DATE)) AS active_days
   FROM fund_ec2.tbl_real_fund_txn t
   WHERE t.c_start_time >= (SELECT start_ts FROM params)
     AND t.c_start_time <  (SELECT end_ts FROM params)
