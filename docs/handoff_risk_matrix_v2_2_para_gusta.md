@@ -17,10 +17,19 @@ Os 5 fixes aplicados aqui sao todos de **tech-debt tecnico baixo risco** — nao
 
 ## O que tem que substituir no orquestrador
 
-**Commit alvo (HEAD `main`):** sera setado apos push — atualizo este doc com o hash exato.
+**Commit alvo (HEAD `main`):**
+```
+9bfa02275cf3ba900d19d20d2b4af770be22671a
+feat(risk_matrix): v2.2 — 5 fixes de auditoria + handoff Gusta
+```
 
 **Repo:** https://github.com/mateusrfabro/multibet-analytics
 **Branch:** `main`
+
+### Link direto raw dos arquivos principais
+
+- https://raw.githubusercontent.com/mateusrfabro/multibet-analytics/9bfa022/ec2_deploy/pipelines/risk_matrix_pipeline.py
+- https://raw.githubusercontent.com/mateusrfabro/multibet-analytics/9bfa022/ec2_deploy/sql/risk_matrix/PROMO_CHAINER.sql
 
 ### Arquivos que mudaram
 
