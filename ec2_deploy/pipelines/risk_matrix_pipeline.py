@@ -75,6 +75,7 @@ TAG_ORDER = [
     "BEHAV_SLOTGAMER",
     "MULTI_GAME_PLAYER",
     "ROLLBACK_PLAYER",
+    "CANCEL_HEAVY_DAILY",
 ]
 
 TAG_TO_COLUMN = {
@@ -99,6 +100,7 @@ TAG_TO_COLUMN = {
     "BEHAV_SLOTGAMER": "behav_slotgamer",
     "MULTI_GAME_PLAYER": "multi_game_player",
     "ROLLBACK_PLAYER": "rollback_player",
+    "CANCEL_HEAVY_DAILY": "cancel_heavy_daily",
 }
 
 ALL_TAG_COLUMNS = list(TAG_TO_COLUMN.values())
@@ -125,6 +127,7 @@ TAG_SCORES = {
     "BEHAV_SLOTGAMER": 5,
     "MULTI_GAME_PLAYER": -10,
     "ROLLBACK_PLAYER": -15,
+    "CANCEL_HEAVY_DAILY": -10,
 }
 
 # Recalibrado com percentis reais (09/04/2026)
@@ -492,6 +495,7 @@ def export_legenda(run_date: str) -> Path:
         "behav_slotgamer": " +5 | Focado em slots + tem deposito",
         "multi_game_player": "-10 | Sessoes simultaneas (possivel bot)",
         "rollback_player": "-15 | Taxa rollback > 10% (exploit tecnico)",
+        "cancel_heavy_daily": "-10 | 10+ cancelamentos (c_txn_type=72) em UM dia (exploit MINES)",
     }
 
     for col, desc in tag_descriptions.items():
